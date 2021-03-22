@@ -1,0 +1,63 @@
+Notes on gy (types of sensors specifically):
+LSM303D - compass + accelerometer (https://github.com/pololu/lsm303-arduino)
+L3GD20 - gyroscope (we will use the newer version of library for it: Adafruit_L3GD20_U (https://github.com/adafruit/Adafruit_L3GD20_U))
+
+I2C interface (should be attached to SCL and SDA at Arduino)
+
+--------------------------------------------------------------------------------------
+Notes on gyroscope + compass:
+Their combination is perfect to make a tilt-compensated compass
+The six independent readings, whose sensitivities can be set in the ranges of ±2 to ±16 g and ±2 to ±12 gauss, are available through I²C and SPI interfaces
+
+Configurable options, including dynamically selectable sensitivities for the accelerometer and magnetometer, a choice of output data rates, and two independently-programmable external inertial interrupt pins
+
+Output format (I²C/SPI):
+Accelerometer: one 16-bit reading per axis
+Magnetometer: one 16-bit reading per axis
+
+Sensitivity range (configurable):
+Accelerometer: ±2, ±4, ±6, ±8, or ±16 g
+// !!!!!!!!!!!!!! Accelerometer needs some changing depending on the device model
+// This should be looked up in the data for it (can be found in the example)
+Magnetometer: ±2, ±4, ±8, or ±12 gauss (needs some calibration before usage (min - max values))
+
+The magnetometer and accelerometer are in power-down mode by default. You have to turn them on by writing the appropriate values to the CTRL1 and CTRL7 registers.
+
+You can read or write multiple registers in a single I²C command by asserting the most significant bit of the register address to enable address auto-increment.
+
+
+--------------------------------------------------------------------------------------
+Notes on gyroscope:
+
+Has standard value as rad/s, therefore I did not read more specifically on it.
+Seems to work fine, measurement error is usually smaller than 0,05 rad/s, usually 0,02, but this needs some testing with time and so on.
+
+
+--------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------
+Samples: (I think, that we should try firstly horizontal calibration and then vertical one, carefully determine in samples in which direction are x, y, z)
+Maybe there is a point to test everything for horisontal board, just keeping in mind that everything should be later rotated. 
+
+- slow horizontal rotation
+
+- fast horisontal rotation
+
+- slow static up - down
+
+- fast static up - down
+
+- y, z rotations
+
+- hard rotations (for developing angle rotation in the future)
+
+- changing board from horistonal position to a vertical one (maybe even to bottom up). It is probably the most important one
+
+- changing board in vertical position from left to right
+
+- going up and down (board in vertical position)
+
+- calibration in horisontal and vertical position (test all 4 directions of world)
+
+
+
+
