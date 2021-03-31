@@ -2,7 +2,7 @@ import ahrs
 import numpy as np
 import serial
 
-from visualisation import *
+from visualization import *
 
 madgwick_obj = ahrs.filters.Madgwick()
 Q = np.array([1., 0., 0., 0.])
