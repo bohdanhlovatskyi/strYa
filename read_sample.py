@@ -76,17 +76,17 @@ if __name__ == '__main__':
     mag_data = []
     gyro_data = []
     Qs = []
-    for i in range(100): # gets 20 measurments
+    for i in range(100): # gets n measurments (can be replaces with while True loop)
         data = process_raw_data(port.readline())
         try: # first measurment is not ok, this should be changed btw
             data[1][1]
         except IndexError:
             continue
-        # not sure whether this needs mora than one iteration data, need some testing
-
+        # not sure whether this needs mora than one iteration data, needs some testing
+        Qs.append([*Q])
         Q = madgwick_obj.updateMARG(Q, gyr=data[2], acc=data[0], mag=data[1])
-        Qs.append(Q)
         acc_data.append(data[0])
         mag_data.append(data[1])
         gyro_data.append(data[2])
-        animate(gyro_data)
+        Qs_to_vis = [elm[1:] for elm in Qs]
+        animate(Qs_to_vis)
