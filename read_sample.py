@@ -1,8 +1,22 @@
 import serial
 import numpy as np
 import ahrs
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
+from mpl_toolkits import mplot3d
 from typing import List
 from analyse_data import Gyroscope, OrientQuaternion
+
+try:
+    port = serial.Serial('/dev/cu.usbserial-14240', 9600)
+except serial.serialutil.SerialException:
+    port = serial.Serial('/dev/cu.usbserial-14120', 9600)
+except:
+    raise
+
+
+madgwick_obj = ahrs.filters.Madgwick()
+Q = np.array([1., 0., 0., 0.])
 
 
 def process_raw_data(line: str, sep: str='//') -> np.array:
@@ -28,33 +42,51 @@ def __float_iter(num_str: str, sep: str = '/') -> List[float]:
 
     return np.array(out)
 
-madgwick_obj = ahrs.filters.Madgwick()
-Q = np.array([1., 0., 0., 0.])
+
+def animate(sensor: List[float]) -> None:
+    '''
+    Simple animation
+
+    Bad realisation, but it is handy
+    '''
+
+    ax = plt.gca()
+    plt.style.use('fivethirtyeight')
+
+    time_values = range(len(sensor))
+
+    sensor_xs, sensor_ys, sensor_zs = zip(*sensor)
+
+    plt.cla()
+    plt.plot(time_values[-20:], sensor_xs[-20:], linestyle='-', color='red')
+    plt.plot(time_values[-20:], sensor_ys[-20:], linestyle='--', color='blue')
+    plt.plot(time_values[-20:], sensor_zs[-20:], linestyle='solid', color='black')
+
+    ax.legend(["x","y","z"])
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Values for sensor")
+
+    plt.draw()
+    plt.pause(0.01)
+
 
 if __name__ == '__main__':
 
-    try:
-        port = serial.Serial('/dev/cu.usbserial-14240', 9600)
-    except serial.serialutil.SerialException:
-        port = serial.Serial(PORTS[1], 9600)
-    except:
-        raise
-
+    acc_data = []
+    mag_data = []
+    gyro_data = []
     Qs = []
-    gyro_datas = []
-    for i in range(20):
+    for i in range(100): # gets 20 measurments
         data = process_raw_data(port.readline())
         try: # first measurment is not ok, this should be changed btw
             data[1][1]
         except IndexError:
             continue
-        print(data)
-        acc_data, mag_data, gyro_data = data
-        gyro_datas.append(gyro_data)
         # not sure whether this needs mora than one iteration data, need some testing
-        Q = madgwick_obj.updateMARG(Q, gyr=gyro_data, acc=acc_data, mag=mag_data)
+
+        Q = madgwick_obj.updateMARG(Q, gyr=data[2], acc=data[0], mag=data[1])
         Qs.append(Q)
-
-    gyro = Gyroscope(gyro_data)
-    q = OrientQuaternion(Qs)
-
+        acc_data.append(data[0])
+        mag_data.append(data[1])
+        gyro_data.append(data[2])
+        animate(gyro_data)
