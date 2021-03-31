@@ -70,6 +70,20 @@ def animate(sensor: List[float]) -> None:
     plt.pause(0.01)
 
 
+def compare_gyro_to_quaternion(gyro: np.ndarray, quater: np.ndarray, coordinate: str) -> None:
+    '''
+    Comparess raw gyro data with quaternion filtered data
+
+    Doesn't seem to work fine, because some calibration is needed for quaternion
+    '''
+
+    coord_to_idx = {'x': 0, 'y': 1, 'z': 2}
+    idx = coord_to_idx[coordinate]
+    gyro_x = [elm[idx] for elm in gyro]
+    quater_x = [elm[idx + 1] for elm in quater]
+    animate(list(zip(gyro_x, quater_x, [0 for _ in range(len(quater_x))])))
+
+
 if __name__ == '__main__':
 
     acc_data = []
@@ -89,4 +103,5 @@ if __name__ == '__main__':
         mag_data.append(data[1])
         gyro_data.append(data[2])
         Qs_to_vis = [elm[1:] for elm in Qs]
-        animate(Qs_to_vis)
+        # animate(Qs_to_vis)
+        compare_gyro_to_quaternion(gyro_data, Qs, 'x')
