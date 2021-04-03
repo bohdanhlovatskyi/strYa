@@ -103,5 +103,8 @@ if __name__ == '__main__':
         mag_data.append(data[1])
         gyro_data.append(data[2])
         Qs_to_vis = [elm[1:] for elm in Qs]
-        # animate(Qs_to_vis)
+
+        # only one visualisation function should be called
+        # 
+        # animate(gyro_data)
         compare_gyro_to_quaternion(gyro_data, Qs, 'x')
