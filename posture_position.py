@@ -1,6 +1,9 @@
 '''
 Class for analysing dataset. Will be used in analytics
 presented to user
+
+! There is a point to calculate a middle value from three sensors
+that would be useful to determine movement and so on.
 '''
 
 from typing import List, Tuple

@@ -124,8 +124,12 @@ class Orientation:
     TODO: not sure whether we need this at all
     '''
 
-    def __init__(self, sensor_group: SensorGroup) -> None:
-        self.orientation = Quaternion(sensor_group)
+    def __init__(self, sensor_group_bottom: SensorGroup,
+                       sensor_group_middle: SensorGroup,
+                       sensor_group_upper: SensorGroup) -> None:
+        self.orientation_bottom = Quaternion(sensor_group_bottom)
+        self.orientation_middle = Quaternion(sensor_group_middle)
+        self.orientation_upper = Orientation(sensor_group_upper)
         self.time = time()
 
 
