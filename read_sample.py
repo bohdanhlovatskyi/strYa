@@ -90,7 +90,7 @@ if __name__ == '__main__':
     mag_data = []
     gyro_data = []
     Qs = []
-    for i in range(100): # gets n measurments (can be replaces with while True loop)
+    while True: # gets n measurments (can be replaces with while True loop)
         data = process_raw_data(port.readline())
         try: # first measurment is not ok, this should be changed btw
             data[1][1]
@@ -106,5 +106,5 @@ if __name__ == '__main__':
 
         # only one visualisation function should be called
         # 
-        # animate(gyro_data)
-        compare_gyro_to_quaternion(gyro_data, Qs, 'x')
+        animate(gyro_data)
+        # compare_gyro_to_quaternion(gyro_data, Qs, 'x')
