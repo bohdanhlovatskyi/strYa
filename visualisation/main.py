@@ -3,40 +3,32 @@ from OpenGL.GLU import *
 import pygame
 from pygame.locals import *
 import math
+from scipy.spatial.transform import Rotation as R
 
 #from read_data import *
 
 from ahrs.filters import Mahony
+from typing import Tuple
 import serial
 import numpy
 
 import math
 
 
-def euler_from_quaternion(x, y, z, w):
-        """
-        Convert a quaternion into euler angles (roll, pitch, yaw)
-        roll is rotation around x in radians (counterclockwise)
-        pitch is rotation around y in radians (counterclockwise)
-        yaw is rotation around z in radians (counterclockwise)
-        """
-        t0 = +2.0 * (w * x + y * z)
-        t1 = +1.0 - 2.0 * (x * x + y * y)
-        roll_x = math.atan2(t0, t1)
-     
-        t2 = +2.0 * (w * y - z * x)
-        t2 = +1.0 if t2 > +1.0 else t2
-        t2 = -1.0 if t2 < -1.0 else t2
-        pitch_y = math.asin(t2)
-     
-        t3 = +2.0 * (w * z + x * y)
-        t4 = +1.0 - 2.0 * (y * y + z * z)
-        yaw_z = math.atan2(t3, t4)
-     
-        return roll_x*57.2957795, pitch_y*57.2957795, yaw_z*57.2957795 # in radians
+def quaternion_to_euler(x, y, z, w):
 
+    t0 = +2.0 * (w * x + y * z)
+    t1 = +1.0 - 2.0 * (x * x + y * y)
+    X = math.degrees(math.atan2(t0, t1))
+    t2 = +2.0 * (w * y - z * x)
+    t2 = +1.0 if t2 > +1.0 else t2
+    t2 = -1.0 if t2 < -1.0 else t2
+    Y = math.degrees(math.asin(t2))
+    t3 = +2.0 * (w * z + x * y)
+    t4 = +1.0 - 2.0 * (y * y + z * z)
+    Z = math.degrees(math.atan2(t3, t4))
+    return X, Y, Z
 
-yaw_mode = False
 
 def resize(width, height):
     if height == 0:
@@ -71,22 +63,20 @@ def draw(ax, ay, az):
     glLoadIdentity()
     glTranslatef(0, 0.0, -7.0)
 
-    osd_text = "pitch: " + str("{0:.2f}".format(ay)) + ", roll: " + str("{0:.2f}".format(ax))
+    osd_line = f'y: {str(round(ay, 2))}, x: {str(round(ax, 2))}, z: {str(round(az, 2))}'
 
-    if yaw_mode:
-        osd_line = osd_text + ", yaw: " + str("{0:.2f}".format(az))
-    else:
-        osd_line = osd_text
 
     drawtext((-2, -2, 2), osd_line)
 
     # the way I'm holding the IMU board, X and Y axis are switched,with respect to the OpenGL coordinate system
     
+    '''
     if yaw_mode:  
         az=az+180  #Comment out if reading Euler Angle/Quaternion angles 
         glRotatef(az, 0.0, 1.0, 0.0)      # Yaw, rotate around y-axis
-
+    '''
  
+    glRotatef(az, 0.0, 1.0, 0.0)      # Yaw, rotate around y-axis
     glRotatef(ay, 1.0, 0.0, 0.0)          # Pitch, rotate around x-axis
     glRotatef(-1 * ax, 0.0, 0.0, 1.0)     # Roll, rotate around z-axis
 
@@ -147,35 +137,8 @@ def Quaternion_to_Euler(Q):
         az=math.degrees(math.atan2(t3, t4))
         return ax, ay, az
 
-# def main(port, Q):
-#     video_flags = OPENGL | DOUBLEBUF
-#     pygame.init()
-#     screen = pygame.display.set_mode((640, 480), video_flags)
-#     pygame.display.set_caption("Press Esc to quit, z toggles yaw mode")
-#     resize(640, 480)
-#     init()
-#     frames = 0
-#     ticks = pygame.time.get_ticks()
-    
-#     while 1:
-#         event = pygame.event.poll()
-#         if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
-#             break
-#         if event.type == KEYDOWN and event.key == K_z:
-#             yaw_mode = not yaw_mode
-        
-#         pygame.display.flip()
-#         frames = frames + 1
-
-#         gyro_data, acc_data, mag_data = process_raw_data(port.readline().decode('utf-8'))
-#         Q = madgwick_obj.updateMARG(Q, gyr=gyro_data, acc=acc_data, mag=mag_data)
-#         x, y, z = Quaternion_to_Euler(Q)
-#         #print(x, y, z)
-#         draw(x, y, z)
-
-
 def main():
-    port = serial.Serial('COM3', 115200)
+    port = serial.Serial('/dev/cu.usbserial-14220', 115200)
 
     orientation = Mahony(frequency=5)
 
@@ -190,7 +153,7 @@ def main():
     video_flags = OPENGL | DOUBLEBUF
     pygame.init()
     screen = pygame.display.set_mode((640, 480), video_flags)
-    pygame.display.set_caption("Press Esc to quit, z toggles yaw mode")
+    pygame.display.set_caption("Press Esc to quit")
     resize(640, 480)
     init()
     frames = 0
@@ -199,14 +162,21 @@ def main():
     while True:
         raw_data = port.readline()
         raw_data = raw_data.decode('utf-8').rstrip('\r\n').split(';')
-        acc, gyro = raw_data
+        try:
+            acc, gyro = raw_data
+        except ValueError:
+            continue
+
 
         acc = [float(i) for i in acc.split()]
         acc_data.append(acc)
         gyro = [float(i) for i in gyro.split()]
-        gyro[0] += 0.04
-        gyro[1] += 0.06
-        gyro[2] += 0.01
+        # TODO: gyro needs some calibration
+        # print(gyro)
+        # some calibration
+        gyro[0] += 0.135
+        gyro[1] += 0.04
+        gyro[2] += 0.00
         gyro_data.append(gyro)
         q = orientation.updateIMU(quaternions[-1], gyro, acc)
         w_q = q[0]
@@ -223,10 +193,11 @@ def main():
         pygame.display.flip()
         frames = frames + 1
 
-        x, y, z = euler_from_quaternion(x_q, y_q, z_q, w_q)
+        r = R.from_quat([x_q, y_q, z_q, w_q])
+        x, y, z = r.as_euler('xyz', degrees=True)
         print(x, y, z)
-        draw(y, x, z)
-        # print(euler_from_quaternion(x, y, z, w))
+        draw(x * -1, y, z /2 )
         quaternions.append(q)
 
-main()
+if __name__ == '__main__':
+    main()
