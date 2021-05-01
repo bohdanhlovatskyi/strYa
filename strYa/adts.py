@@ -8,7 +8,7 @@ could be used to analyse data written to a dataset.
 
 from typing import Dict, Tuple, List
 from abc import ABCMeta, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from time import time
 
 class Sensor(metaclass=ABCMeta):
@@ -92,14 +92,14 @@ class Magnetometer(Sensor):
 
 class Quaternion:
     
-    def __init__(self, sensor_group: SensorGroup) -> None:
+    def __init__(self, sensor_group) -> None:
         angle, vector_x, vector_y, vector_z = self.proccess_group(sensor_group)
         self.angle = angle
         self.x = vector_x
         self.y = vector_y
         self.z = vector_z
 
-    def proccess_group(self, group: SensorGroup) -> Tuple[float]:
+    def proccess_group(self, group) -> Tuple[float]:
         pass
 
 @dataclass
@@ -114,7 +114,7 @@ class SensorGroup:
 
     acc: Accelerometer
     gyro: Gyro
-    mag: Magnetometer
+    mag: Magnetometer = field(default_factory=None)
 
 class Orientation:
     '''
@@ -124,12 +124,8 @@ class Orientation:
     TODO: not sure whether we need this at all
     '''
 
-    def __init__(self, sensor_group_bottom: SensorGroup,
-                       sensor_group_middle: SensorGroup,
-                       sensor_group_upper: SensorGroup) -> None:
-        self.orientation_bottom = Quaternion(sensor_group_bottom)
-        self.orientation_middle = Quaternion(sensor_group_middle)
-        self.orientation_upper = Orientation(sensor_group_upper)
+    def __init__(self, sensor_group: SensorGroup) -> None:
+        self.orientation = Quaternion(sensor_group)
         self.time = time()
 
 
