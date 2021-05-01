@@ -3,14 +3,16 @@ from OpenGL.GLU import *
 import pygame
 from pygame.locals import *
 import math
+import datetime
+import time
 from scipy.spatial.transform import Rotation as R
 
 #from read_data import *
 
-from ahrs.filters import Mahony
+from ahrs.filters import Madgwick, Mahony
 from typing import Tuple
 import serial
-import numpy
+import numpy as np
 
 import math
 
@@ -137,9 +139,30 @@ def Quaternion_to_Euler(Q):
         az=math.degrees(math.atan2(t3, t4))
         return ax, ay, az
 
-def main():
-    port = serial.Serial('/dev/cu.usbserial-14220', 115200)
+class Buffer:
 
+    def __init__(self, size: int = 25) -> None:
+        self.data = []
+        self.size = size
+        self.optimal = None
+
+    def push(self, quat: Tuple[float]) -> None:
+        if len(self.data) == self.size:
+            self.data.pop(0)
+        self.data.append(quat)
+
+    def is_filled(self, size: int = 25) -> bool:
+        return len(self.data) == self.size
+
+    def optimal_position(self) -> Tuple[float]:
+        data = np.array(self.data)
+        self.optimal = list(data.mean(axis=0))
+        return self.optimal
+
+def main():
+    port = serial.Serial('/dev/cu.usbserial-14240', 115200)
+
+    # orientation = Mahony(frequency=5)
     orientation = Mahony(frequency=5)
 
     quaternions = []
@@ -147,7 +170,7 @@ def main():
     acc_data = []
     mag_data = []
 
-    q = numpy.array([1, 0.0, 0.0, 0.0])
+    q = np.array([1, 0.0, 0.0, 0.0])
     quaternions.append(q)
 
     video_flags = OPENGL | DOUBLEBUF
@@ -159,6 +182,10 @@ def main():
     frames = 0
     ticks = pygame.time.get_ticks()
 
+    buf = Buffer()
+
+    outfile = open('euler_angles_3.txt', 'w')
+    i = 0
     while True:
         raw_data = port.readline()
         raw_data = raw_data.decode('utf-8').rstrip('\r\n').split(';')
@@ -179,25 +206,44 @@ def main():
         gyro[2] += 0.00
         gyro_data.append(gyro)
         q = orientation.updateIMU(quaternions[-1], gyro, acc)
-        w_q = q[0]
-        x_q = q[1]
-        y_q = q[2]
-        z_q = q[3]
+        w_q, x_q, y_q, z_q = q
+
+        if i < 15:
+            print(f'{i} iter is skipped')
+            i += 1
+            continue
+
+        if not buf.is_filled():
+            buf.push(quaternion_to_euler(x_q, y_q, z_q, w_q))
+            print(buf)
+            continue
+        else:
+            if not buf.optimal:
+                buf.optimal_position()
+                print(buf.optimal)
+        # print('----', quaternion_to_euler(*buf.optimal))
 
         event = pygame.event.poll()
         if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
             break
-        if event.type == KEYDOWN and event.key == K_z:
-            yaw_mode = not yaw_mode
-        
+
         pygame.display.flip()
         frames = frames + 1
 
-        r = R.from_quat([x_q, y_q, z_q, w_q])
-        x, y, z = r.as_euler('xyz', degrees=True)
+        # r = R.from_quat([x_q, y_q, z_q, w_q])
+        # x, y, z = r.as_euler('xyz', degrees=True)
+        x, y, z = quaternion_to_euler(x_q, y_q, z_q, w_q)
+        if abs(y) - abs(buf.optimal[1]) > 10: # here should go some percentage
+            print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+        if abs(x) - abs(buf.optimal[0]) > 10:
+            print('horisontal ?????????????????????')
+        # outfile.write(f'{time.time()}, {x}, {y}, {z}\n')
+
         print(x, y, z)
-        draw(x * -1, y, z /2 )
+        draw(x, y, z)
         quaternions.append(q)
+
+    outfile.close()
 
 if __name__ == '__main__':
     main()
