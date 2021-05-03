@@ -7,17 +7,24 @@ that would be useful to determine movement and so on.
 '''
 
 from typing import List, Tuple
-from adts import Orientation, SensorGroup
+from datetime import datetime
+from strYa.adts import *
 from ahrs import Quaternion
 
 class PosturePosition:
 
-    def __init__(self, data):
-        self.data = data
+    def __init__(self) -> None:
+        '''
+        Should be used as container for certain variables that would be comfportable
+        to use while analysing the user's posture
+        '''
+
+        self.optimal_position = None
+        self.__iters_without_movement: int = 0
 
     @staticmethod
-    def _find_change(prev_orientation: Orientation,
-                     current: Orientation) ->\
+    def _find_change(prev_orientation: Tuple[float],
+                     current: Tuple[float]) ->\
                      Tuple[float, Tuple[float]]:
         '''
         Determines change between two orientation measurements.
@@ -29,8 +36,8 @@ class PosturePosition:
         pass
 
     @staticmethod
-    def _detects_movement(prev_orientation: Orientation,\
-                          current: Orientation, precision: int = 10) -> bool:
+    def _detects_movement(prev_orientation: Tuple[float],\
+                          current: Tuple[float], precision: int = 10) -> bool:
         '''
         determines whether object moves between two measurements.
 
@@ -47,11 +54,17 @@ class PosturePosition:
 
         return False
 
-    def __get_optimal_value(self) -> None:
-        if not self.data.is_filled():
-            raise ValueError()
-        
-        self.optimal_position = buf.optimal_value()
+    def check_current_posture(self, orientation: QuaternionContainer) -> None:
+        x, y, z = orientation.to_euler()
+        # determine_bad_posture(q)
+        if (abs(y) - abs(self.optimal_position[1])) > 10:
+            print(f'Bad posture {datetime.now()}')
+        if abs(x - self.optimal_position[0]) > 10:
+            print(f'Bad horisontal posture {datetime.now()}')
+
+
+    def set_optimal_position(self, optimal_position: Tuple[float]) -> None:
+        self.optimal_position = optimal_position
 
     def visualise_posture(self) -> None:
         '''
@@ -63,7 +76,7 @@ class PosturePosition:
     def find_time_without_movement(self) -> float:
         pass
 
-    def most_popular_position(self) -> Orientation:
+    def most_popular_position(self) -> Tuple[float]:
         pass
 
     def recommendations(self) -> str:
@@ -72,46 +85,3 @@ class PosturePosition:
         '''
         
         pass
-
-
-class Buffer:
-
-    def __init__(self, size: int = 10) -> None:
-        self.positions = []
-        self.size = size
-
-    def add(self, pos: Orientation) -> None:
-        self.positions.append(pos)
-
-    def is_filled(self) -> bool:
-        return len(self.positions) >= self.size
-
-    def optimal_value(self) -> Orientation:
-        pass
-
-    def from_file(self, path: str ='test_set.txt', size: int = 100, sep: str = ', ') -> None:
-
-        with open(path) as infile:
-            lines = infile.readlines()
-
-        for idx, line in enumerate(lines):
-            line = line.rstrip().split(sep=sep)
-            lines[idx] = [float(elm) for elm in line]
-
-        return lines
-
-if __name__ == '__main__':
-    
-    buf = Buffer()
-    print(buf.from_file())
-    # while not buf.is_filled():
-        # acc, gyro, _ = read_data(filename='dataset.txt')
-        # buf.add(Orientation(SensorGroup(acc, gyro)))
-# 
-    # pos_pos = PosturePosition(buf)
-# 
-    # while True:
-        # acc, gyro, _ = read_data(filename='dataset.txt')
-        # buf.pop(0)
-        # orient = Orientation(SensorGroup(acc, gyro))
-        # buf.append(orient)

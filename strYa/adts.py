@@ -6,6 +6,8 @@ Should be run in a simulation, or in case one wants to test the system
 could be used to analyse data written to a dataset.
 '''
 
+import numpy as np
+import math
 from typing import Dict, Tuple, List
 from abc import ABCMeta, abstractmethod
 from dataclasses import dataclass, field
@@ -22,22 +24,23 @@ class Sensor(metaclass=ABCMeta):
     def __init__(self, values_tuple: Tuple[float], settings: Dict = None) -> None:
         # higly unlikely that this class will be used by the user
         self._values = values_tuple
-        self.set_settings(settings)
         self.init_time = time() # not sure whether we really need this here
-        # because it will be called in the orientation class, which seems kinda more
-        # handy
+        # because it will be called in the orientation class, which
+        # seems kinda more handy
+        if not settings:
+            self.settings = None
+        else:
+            self.set_settings(settings)
 
-    def set_settings(self, settings: Dict) -> None:
-        if settings is None:
-            return
-
-        for setting in settings:
-            self.__setattr__(setting, settings[setting])
+    def set_settings(self, user_settings: Dict[str, float]) -> None:
+        for setting in user_settings:
+            self.__setattr__(setting, user_settings[setting])
 
     @property
     def raw_data(self) -> Tuple[float]:
-        return self._values
+        return np.array(self._values)
 
+    @property
     @abstractmethod
     def sensor_data(self) ->Tuple[float]:
         '''
@@ -46,6 +49,9 @@ class Sensor(metaclass=ABCMeta):
         '''
 
         return NotImplemented
+
+    def as_numpy_array(self) -> np.array:
+        return np.array(self._values)
 
     def __str__(self) -> str:
         return f'{type(self).__name__}{self.raw_data}'
@@ -60,10 +66,9 @@ class Accelerometer(Sensor):
         TODO: what exactly parameters affect the accelerometer values
         '''
 
-        if settings is None:
-            return self.raw_data
+        #if self.settings is None:
+        return self.raw_data
 
-        pass
 
 class Gyro(Sensor):
     
@@ -72,66 +77,111 @@ class Gyro(Sensor):
         Processes data depending on the given settings
         '''
 
-        if settings is None:
-            return self.raw_data
+        idx_to_atr = {0: 'x', 1: 'y', 2: 'z'}
+        try:
+            corrected_data = [value - getattr(self, idx_to_atr[idx]) \
+                            for idx, value in enumerate(self._values)]
+        except AttributeError as err:
+            raise ValueError('You shoule specify settings for gyro')
 
-        pass
+        return np.array(corrected_data)
 
-class Magnetometer(Sensor):
+
+class QuaternionContainer:
     
-    def sensor_data(self) -> Tuple[float]:
+    def __init__(self, data: np.array) -> None:
+        self.w, self.x, self.y, self.z = data
+
+    def as_numpy_array(self) -> np.array:
+        return np.array([self.w, self.x, self.y, self.z])
+
+    def to_euler(self) -> Tuple[float]:
         '''
-        Processes data depending on the given settings
+        Turns the Quaternion readings into Euler Angles for projection
         '''
 
-        if settings is None:
-            return self.raw_data
+        t0 = +2.0 * (self.w * self.x + self.y * self.z)
+        t1 = +1.0 - 2.0 * (self.x * self.x + self.y * self.y)
+        X = math.degrees(math.atan2(t0, t1))
 
-        pass
+        t2 = +2.0 * (self.w * self.y - self.z * self.x)
+        t2 = +1.0 if t2 > +1.0 else t2
+        t2 = -1.0 if t2 < -1.0 else t2
+        Y = math.degrees(math.asin(t2))
 
+        t3 = +2.0 * (self.w * self.z + self.x * self.y)
+        t4 = +1.0 - 2.0 * (self.y * self.y + self.z * self.z)
+        Z = math.degrees(math.atan2(t3, t4))
 
-class Quaternion:
-    
-    def __init__(self, sensor_group) -> None:
-        angle, vector_x, vector_y, vector_z = self.proccess_group(sensor_group)
-        self.angle = angle
-        self.x = vector_x
-        self.y = vector_y
-        self.z = vector_z
-
-    def proccess_group(self, group) -> Tuple[float]:
-        pass
+        return X, Y, Z
 
 @dataclass
 class SensorGroup:
     '''
-    Sensor group container. Contains three sensors info
+    Sensor group container. Contains sensors info
     that will be processed in some class that will represent
     rotation and relative position
-
-    TODO: rewrite for fusion of 3 sensors !!!! ! ! ! ! ! 
     '''
 
     acc: Accelerometer
     gyro: Gyro
-    mag: Magnetometer = field(default_factory=None)
-
-class Orientation:
-    '''
-    Main class that will contain all the info on the
-    orientation of a person based on sensor fusion.
-
-    TODO: not sure whether we need this at all
-    '''
-
-    def __init__(self, sensor_group: SensorGroup) -> None:
-        self.orientation = Quaternion(sensor_group)
-        self.time = time()
 
 
-if __name__ == '__main__':
-    acc = Accelerometer((10, 11, 12))
-    print(acc)
-    print(acc.raw_data)
-    print(acc.set_settings({'lol': 3}))
-    print(acc.lol)
+class Buffer:
+
+    def __init__(self, size: int = 25) -> None:
+        self.data = []
+        self.size = size
+        self.optimal = None
+        self.gyro_settings = None
+
+    def push(self, quat: Tuple[float]) -> None:
+        '''
+        Puches an elements into buffer, while it is not filled.
+
+        If it is, deletes the first element in order for buffer
+        to remain of the same size.
+        '''
+
+        if len(self.data) == self.size:
+            self.data.pop(0)
+        self.data.append(quat)
+
+    def is_filled(self) -> bool:
+        '''
+        Checks whether buffer is filled
+        '''
+
+        return len(self.data) == self.size
+
+    def optimal_position(self) -> Tuple[float]:
+        '''
+        Based on measurments, determines user's optimal position.
+        '''
+
+        data = np.array(self.data)
+        self.optimal = list(data.mean(axis=0))
+        print(f'Buffer is filled, optimal position is {self.optimal}')
+        return self.optimal
+
+    def count_gyro_drift(self) -> None:
+        '''
+        Finds the drift (bias) of gyro, based on the measurements
+        that are in the filled buffer. Then applies them as settings in order
+        to get rid of this bias later on
+        '''
+
+        # takes three args that represent gyro measuremnts
+        gyro_data = np.array([msr[3:] for msr in self.data])
+        drift = gyro_data.mean(axis=0)
+        settings = {
+            'x': drift[0],
+            'y': drift[1],
+            'z': drift[2] 
+        }
+
+        self.gyro_settings = settings
+
+    def __str__(self) -> str:
+        return str(self.data)
+
