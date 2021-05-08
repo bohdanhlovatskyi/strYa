@@ -98,24 +98,6 @@ def draw(ax, ay, az):
     glVertex3f(1.0, -0.2, -1.0)
     glEnd()
 
-#This function reads the Quaternion angle readings from the BnO055
-def Quaternion_to_Euler(Q):
-        #Turns the Quaternion readings into Euler Angles for projection
-        w, x, y, z = Q[0], Q[1], Q[2], Q[3]
-        ysqr = y*y
-        t0 = +2.0 * (w * x + y*z)
-        t1 = +1.0 - 2.0 * (x*x + ysqr)
-        ax = (math.degrees(math.atan2(t0, t1)))
-        
-        t2 = +2.0 * (w*y - z*x)
-        t2 =  1 if t2 > 1 else t2
-        t2 = -1 if t2 < -1 else t2
-        ay= math.degrees(math.asin(t2))
-       
-        t3 = +2.0 * (w * z + x*y)
-        t4 = +1.0 - 2.0 * (ysqr + z*z)
-        az=math.degrees(math.atan2(t3, t4))
-        return ax, ay, az
 
 def main(port, Q):
     video_flags = OPENGL | DOUBLEBUF

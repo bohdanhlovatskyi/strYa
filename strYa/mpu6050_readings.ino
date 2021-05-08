@@ -4,6 +4,9 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
+int led = 13;
+int state = 0;
+
 Adafruit_MPU6050 mpu;
 Adafruit_MPU6050 mpu1;
 
@@ -11,6 +14,8 @@ void setup(void) {
   Serial.begin(115200);
   while (!Serial)
     delay(10);
+
+   pinMode(led, OUTPUT);
 
   // Try to initialize!
   if (!mpu.begin(0b1101000)) {
@@ -35,10 +40,22 @@ void setup(void) {
   mpu1.setGyroRange(MPU6050_RANGE_250_DEG);
   mpu1.setFilterBandwidth(MPU6050_BAND_5_HZ);
 
-  delay(100);
 }
 
 void loop() {
+
+  if (Serial.available() > 0) {
+    state = Serial.read();
+  }
+
+  if (state == '1') {
+    digitalWrite(led, HIGH);
+    state = 0;
+  } else {
+    digitalWrite(led, LOW);
+    state = 0;
+  }
+  delay(100);
 
   /* Get new sensor events with the readings */
   sensors_event_t a, g, temp;
@@ -87,5 +104,4 @@ void loop() {
   Serial.print(g1.gyro.z);
 
   Serial.println("");
-  delay(100);
 }

@@ -8,20 +8,23 @@ could be used to analyse data written to a dataset.
 
 import numpy as np
 import math
+import serial
 from typing import Dict, Tuple, List
-from abc import ABCMeta, abstractmethod
 from ahrs import Quaternion
 from datetime import datetime
 from time import time
+
+from abc import ABCMeta, abstractmethod
+from ahrs.filters import Madgwick, Mahony
 
 
 class Buffer:
 
     def __init__(self, size: int = 25) -> None:
-        self.data = []
-        self.size = size
-        self.optimal = None
-        self.gyro_settings = None
+        self.data: List[float] = []
+        self.size: int = size
+        self.optimal: List[float] = None
+        self.gyro_settings: Tuple[float] = None
 
     def push(self, quat: Tuple[float]) -> None:
         '''
@@ -49,7 +52,6 @@ class Buffer:
 
         data = np.array(self.data)
         optimal = list(data.mean(axis=0))
-        print(f'Buffer is filled, optimal position is {optimal}')
         return optimal
 
     def count_gyro_drift(self) -> None:
@@ -60,15 +62,11 @@ class Buffer:
         '''
 
         # takes three args that represent gyro measuremnts
-        gyro_data = np.array([msr[3:] for msr in self.data])
-        drift = gyro_data.mean(axis=0)
-        settings = {
-            'x': drift[0],
-            'y': drift[1],
-            'z': drift[2] 
-        }
+        gyro_data = np.array(self.data)
+        bias = tuple(gyro_data.mean(axis=0))
+        print(f'Gyro bias is calculated: {bias}')
 
-        self.gyro_settings = settings
+        return bias
 
     def __str__(self) -> str:
         return str(self.data)
@@ -82,96 +80,64 @@ class Sensor(metaclass=ABCMeta):
     of time
     '''
 
-    def __init__(self, values_tuple: Tuple[float], settings: Dict = None) -> None:
-        # higly unlikely that this class will be used by the user
-        self.values = values_tuple
-        self.init_time = time() # not sure whether we really need this here
-        # because it will be called in the orientation class, which
-        # seems kinda more handy
-        if not settings:
-            self.settings = None
-        else:
-            self.set_settings(settings)
+    def __init__(self) -> None:
+        self.buffer: Buffer = Buffer()
+        self.current_value: Tuple[float] = None
+        self.settings: Tuple[float] = None
 
-    def set_settings(self, user_settings: Dict[str, float]) -> None:
-        for setting in user_settings:
-            self.__setattr__(setting, user_settings[setting])
-
-    @property
-    def raw_data(self) -> Tuple[float]:
-        return np.array(self.values)
-
-    @property
     @abstractmethod
-    def sensor_data(self) ->Tuple[float]:
-        '''
-        Procceeds the raw data depending on the given setting.
-        For each sensor these setting are different
-        '''
-
-        return NotImplemented
-
-    def as_numpy_array(self) -> np.array:
-        return np.array(self.values)
+    def set_values(self):
+        pass
 
     def __str__(self) -> str:
-        return f'{type(self).__name__} Here should go your data'
+        return f'{type(self).__name__}({self.current_value})'
+
+    @property
+    def current_value_np(self) -> np.ndarray:
+        return np.array(self.current_value)
 
 
 class Accelerometer(Sensor):
+    '''
+    Accelerometer container class
+    '''
 
-    def sensor_data(self) -> Tuple[float]:
-        '''
-        Processes data depending on the given settings
-
-        TODO: what exactly parameters affect the accelerometer values
-        '''
-
-        #if self.settings is None:
-        return self.raw_data
-
+    def set_values(self, values: Tuple[float]) -> None: 
+        self.current_value = values
 
 class Gyro(Sensor):
 
-    calibration_buffer = Buffer()
-    settings = None
-    idx_to_atr = {0: 'x', 1: 'y', 2: 'z'}
-
-    def __new__(cls,  *args) -> 'Gyro':
-        gyro = super(Gyro, cls).__new__(cls)
-        # while creating a new instance of class,
-        # fills the buffer to count gyro bias (drift)
-        # that then will be reduced while creating a new instance
-        if gyro.settings is not None:
-            gyro.set_settings(Gyro.settings)
-        elif not Gyro.calibration_buffer.is_filled():
-            Gyro.calibration_buffer.push(args[0])
-        # calculates actual bias from the filled buffer
-        elif not Gyro.settings:
-            print(Gyro.calibration_buffer)
-            Gyro.settings = {Gyro.idx_to_atr[idx]: value for idx, value in\
-                            enumerate(Gyro.calibration_buffer.optimal_position())}
-            print(Gyro.settings)
-            gyro.set_settings(Gyro.settings)
-            Gyro.calibration_buffer = None
-
-        return gyro
-    
-    def sensor_data(self) -> Tuple[float]:
+    def process_values(self, values: List[float]) -> Tuple[float]:
         '''
-        Processes data depending on the given settings
+        Processes value due to the gyro setings.
+        If there is no such, raises ValueError
         '''
 
-        if not Gyro.settings:
-            return self.raw_data
-        try:
-            corrected_data = [value - getattr(self, Gyro.idx_to_atr[idx]) \
-                            for idx, value in enumerate(self.values)]
-        except AttributeError as err:
-            raise ValueError('You shoule specify settings for gyro')
+        if self.settings is None:
+            raise ValueError('There is no settings counted')
 
-        return np.array(corrected_data)
+        for idx, value in enumerate(values):
+            values[idx] = value - self.settings[idx]
 
+        return values            
+
+    def set_values(self, values: Tuple[float]) -> None:
+        '''
+        Assignes value to this gyro. Values go into buffer
+        in order to have the bias counted
+        '''
+
+        if self.settings is not None:
+            self.current_value = self.process_values(values)
+            return
+        if not self.buffer.is_filled():
+            self.buffer.push(values)
+            self.current_value = values
+            return
+        self.settings = self.buffer.count_gyro_drift()
+        self.current_value = self.process_values(values)
+        self.buffer = None
+        return
 
 
 class QuaternionContainer:
@@ -181,6 +147,9 @@ class QuaternionContainer:
 
     def as_numpy_array(self) -> np.array:
         return np.array([self.w, self.x, self.y, self.z])
+
+    def __str__(self) -> str:
+        return str(self.as_numpy_array())
 
     def to_euler(self) -> Tuple[float]:
         '''
@@ -209,26 +178,65 @@ class SensorGroup:
     rotation and relative position
     '''
 
-    def __init__(self, acc: Accelerometer = None, gyro: Gyro = None) -> None:
-        self.acc = Accelerometer
-        self.gyro = Gyro
-        self.orientation = QuaternionContainer(np.array([1, 0, 0, 0]))
+    def __init__(self, name: str = 'sensor_group') -> None:
+        self.name = name
+        self.acc = Accelerometer()
+        self.gyro = Gyro()
+        self.orientation = QuaternionContainer([1.0, 0.0, 0.0, 0.0])
+        self.optimal_position = None
+        self.buffer: Buffer = Buffer()
+        self.filter = Mahony(frequency=5)
 
-    def set_current_orientation(sefl, orientation: np.ndarray) -> None: 
-        self.orientation = QuaternionContainer(list(orientation))
+    def count_orientation(self, only_count: bool = False) -> None:
+        if self.name == 'lower one':
+            # print(f'{self.name}: {self.orientation}') - there is some prroblem, no idea what exactly
+            # print(self.acc, self.gyro) -> this works fine to me
+            pass
 
+        self.orientation = QuaternionContainer(self.filter.updateIMU(self.orientation.as_numpy_array(),
+                                                                     self.gyro.current_value_np,
+                                                                     self.acc.current_value_np))
 
-    @property
-    def optimal_position(self) -> Tuple[float]:
-        '''
-        We can pass the logic of determining the optimal postiion here as well
-        '''
+        if only_count:
+            return
 
-        return self.orientation
+        if self.optimal_position is not None:
+            return
+        if not self.buffer.is_filled():
+            self.buffer.push(self.orientation.to_euler())
+            return
+        if not self.optimal_position:
+            self.optimal_position = self.buffer.optimal_position()
+            print(self.buffer.data)
+            print(f'Optimal position of {self.name} sensor grroup is estimated, it is: {self.optimal_position}\n')
+            self.buffer = None
+            return
 
-    def set_sensors(self, acc: Accelerometer, gyro: Gyro):
-        self.acc = acc
-        self.gyro = gyro
+    def check_current_posture(self, port: serial.Serial = None) -> None:
+        # print(self.orientation.to_euler())
+        try:
+            x, y, z = self.orientation.to_euler()
+        except TypeError:
+            return
+        except AttributeError: 
+            return
+        # determine_bad_posture(q)
+        vertical_posture: bool = True
+        horisontal_posture: bool = True
+        posture_to_str: Dict[bool, str] = {True: 'OK', False: 'F'}
+        if (abs(y) - abs(self.optimal_position[1])) > 10:
+            vertical_posture = False
+        if abs(x - self.optimal_position[0]) > 10:
+            horisontal_posture = False
+
+        print(f'Sensor: {self.name} | Vertical: {posture_to_str[vertical_posture]}; \
+Horisontal: {posture_to_str[horisontal_posture]}; {datetime.now()}')
+
+        # in case the posture is bad, writes 1 to the serial port so
+        # it would be handled and the led would be powered
+        if port and (not vertical_posture or not horisontal_posture):
+            port.write(bytearray(b'1'))
+
 
     def __str__(self) -> str:
         return f'{str(self.acc)} | {str(self.gyro)})'
@@ -236,13 +244,64 @@ class SensorGroup:
 
 class PosturePosition:
 
-    def __init__(self, sensor_groups: Tuple[SensorGroup] = None) -> None:
+    def __init__(self) -> None:
         '''
         Should be used as container for certain variables that would be comfportable
         to use while analysing the user's posture
         '''
 
-        self.sensor_groups = sensor_groups
+        self.upper_sensor_group = SensorGroup('upper one')
+        self.lower_sensor_group = SensorGroup('lower one')
+        self.sensor_groups = (self.upper_sensor_group, self.lower_sensor_group)
+        self.num_of_groups: int = 2
+
+    def get_sensor_data(self, port: serial.Serial) -> None:
+
+
+        SENSOR_GROUP_SEPARATOR = '|'
+        SENSOR_SEPARATOR = '; '
+        COORDINATE_SEPARATOR = ', '
+        line = port.readline()
+
+        try:
+            data = line.decode('utf-8').rstrip('\r\n').split(SENSOR_GROUP_SEPARATOR)
+        except AttributeError:
+            raise ValueError('The data cannot be readen')
+
+        if len(data) != self.num_of_groups: # if there is not enought data  for 4 sensors
+            raise ValueError('Number of data that is read does not match with the number\
+    of given sensor groups to read into')
+
+        for_obj_data = []
+        for line, sensor_group in zip(data, self.sensor_groups):
+            try:
+                acc, gyro = line.split(SENSOR_SEPARATOR)
+            except ValueError:
+                return
+
+            # time is saved at the time of creation of an object
+            acc = [round(float(i), 2) for i in acc.split(COORDINATE_SEPARATOR)]
+            gyro = [round(float(i), 2) for i in gyro.split(COORDINATE_SEPARATOR)]
+            # print(sensor_group.name, acc, gyro)
+            sensor_group.gyro.set_values(gyro)
+            sensor_group.acc.set_values(acc)
+
+    def establish_connection(self, baudrate: int = 115200) -> serial.Serial:
+        '''
+        Establishes a connection on available port on a given baudrate
+        '''
+
+        possible_ports = ['/dev/cu.usbserial-14120',
+                        '/dev/cu.usbserial-14220', 
+                        '/dev/cu.usbserial-14240'
+                        'COM3']
+
+        for port in possible_ports:
+            try:
+                return serial.Serial(port, baudrate)
+            except serial.serialutil.SerialException as exc:
+                continue
+        raise ValueError('There is no available port to connect to')
 
     @staticmethod
     def _find_change(prev_orientation: Tuple[float],
@@ -276,45 +335,15 @@ class PosturePosition:
 
         return False
 
-    def check_current_posture(self, orientation: QuaternionContainer) -> None:
-        x, y, z = orientation.to_euler()
-        # determine_bad_posture(q)
-        if (abs(y) - abs(self.optimal_position[1])) > 10:
-            print(f'Bad posture {datetime.now()}')
-        if abs(x - self.optimal_position[0]) > 10:
-            print(f'Bad horisontal posture {datetime.now()}')
-
 
     def set_optimal_position(self, optimal_position: Tuple[float]) -> None:
         self.optimal_position = optimal_position
 
-    def visualise_posture(self) -> None:
-        '''
-        Visualises the posture via matplotlib(???)
-        '''
-
-        pass
-
-    def find_time_without_movement(self) -> float:
-        pass
-
-    def most_popular_position(self) -> Tuple[float]:
-        pass
-
-    def recommendations(self) -> str:
-        '''
-        Prints out some information
-        '''
-        
-        pass
 
 if __name__ == '__main__':
-    g = Gyro((1, 1, 1))
-    print(g)
-    print(Gyro.calibration_buffer)
-    g1 = Gyro((2, 2, 2))
-    print(Gyro.calibration_buffer)
-    for i in range(25):
-        Gyro((i, i, i))
-    print(Gyro((15, 15, 15)).sensor_data())
-    
+    posture = PosturePosition()
+    print(posture.upper_sensor_group.gyro)
+    for i in range(26):
+        posture.upper_sensor_group.gyro.set_values([i, i, i])
+    print(posture.upper_sensor_group.gyro)
+    print(posture.upper_sensor_group.gyro.settings)
