@@ -15,7 +15,7 @@ from datetime import datetime
 from time import time
 
 from abc import ABCMeta, abstractmethod
-from ahrs.filters import Madgwick, Mahony
+from ahrs.filters import Mahony
 
 
 class Buffer:
