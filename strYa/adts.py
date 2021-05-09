@@ -224,7 +224,7 @@ class SensorGroup:
         vertical_posture: bool = True
         horisontal_posture: bool = True
         posture_to_str: Dict[bool, str] = {True: 'OK', False: 'F'}
-        if (abs(y) - abs(self.optimal_position[1])) > 10:
+        if abs(y - self.optimal_position[1]) > 10:
             vertical_posture = False
         if abs(x - self.optimal_position[0]) > 10:
             horisontal_posture = False
