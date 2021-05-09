@@ -34,7 +34,7 @@ class Buffer:
         to remain of the same size.
         '''
 
-        if len(self.data) == self.size:
+        if self.is_filled():
             self.data.pop(0)
         self.data.append(quat)
 
