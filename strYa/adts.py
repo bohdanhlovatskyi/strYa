@@ -15,7 +15,7 @@ from datetime import datetime
 from time import time
 
 from abc import ABCMeta, abstractmethod
-from ahrs.filters import Madgwick, Mahony
+from ahrs.filters import Mahony
 
 
 class Buffer:
@@ -34,7 +34,7 @@ class Buffer:
         to remain of the same size.
         '''
 
-        if len(self.data) == self.size:
+        if self.is_filled():
             self.data.pop(0)
         self.data.append(quat)
 
@@ -224,7 +224,7 @@ class SensorGroup:
         vertical_posture: bool = True
         horisontal_posture: bool = True
         posture_to_str: Dict[bool, str] = {True: 'OK', False: 'F'}
-        if (abs(y) - abs(self.optimal_position[1])) > 10:
+        if abs(y - self.optimal_position[1]) > 10:
             vertical_posture = False
         if abs(x - self.optimal_position[0]) > 10:
             horisontal_posture = False
