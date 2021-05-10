@@ -54,11 +54,14 @@ def main(from_file: str = None, file_name: str = None) -> None:
             data = posture.preprocess_data(line)
         else:
             sleep(0.1)
-            line = file_data[iteration]
+            try:
+                line = file_data[iteration]
+            except IndexError:
+                break
             data = posture.preprocess_data_from_file(line)
 
         # because data from port works with different separator
-        posture.get_sensor_data(data, file)
+        posture.set_sensor_data(data, file)
         if not posture.lower_sensor_group.gyro.settings:
             # waits for bias that will be then applied to each element
             print('. . .')
@@ -71,14 +74,22 @@ def main(from_file: str = None, file_name: str = None) -> None:
                 sensor_group.count_orientation(only_count=True)
             else:
                 sensor_group.count_orientation()
+
+            # this allows to see the comparison on both sensors
             try:
-                # port in which we will write in case if the posture is bad
-                sensor_group.check_current_posture(port=port)
-            except TypeError: # while optimal position is not
-                # calculated typeerror will be raised by check current pos func
+                sensor_group._check_current_posture_one_sensor(port=port)
+            except TypeError:
                 continue
+
+        try:
+            # port in which we will write in case if the posture is bad
+            posture.check_current_posture(port=port)
+        except TypeError: # while optimal position is not
+            # calculated typeerror will be raised by check current pos func
+            continue
     else:
         file.close()
 
 if __name__ == '__main__':
-    main(from_file='datasets/forward_movements/forward_tilt.txt')
+    main(from_file='datasets/forward_movements/forward_rotation_with_tilt.txt')
+    # main()

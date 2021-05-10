@@ -65,7 +65,6 @@ class Buffer:
 
         # takes three args that represent gyro measuremnts
         gyro_data = np.array(self.data)
-        print(gyro_data)
         bias = tuple(gyro_data.mean(axis=0))
         print(f'Gyro bias is calculated: {bias}')
 
@@ -210,12 +209,30 @@ class SensorGroup:
             return
         if not self.optimal_position:
             self.optimal_position = self.buffer.optimal_position()
-            print(self.buffer.data)
             print(f'Optimal position of {self.name} sensor grroup is estimated, it is: {self.optimal_position}\n')
             self.buffer = None
             return
 
-    def check_current_posture(self, port: serial.Serial = None) -> None:
+    def deviation_from_optimal(self) -> Tuple[float]:
+        try:
+            x, y, z = self.orientation.to_euler()
+        except TypeError:
+            return
+        except AttributeError: 
+            return
+
+        return (abs(x - self.optimal_position[0]), 
+                abs(y - self.optimal_position[1]),
+                abs(z - self.optimal_position[2]))
+
+    def _check_current_posture_one_sensor(self, port: serial.Serial = None) -> None:
+        '''
+        This function is kinda deprecated because works well
+        only with logic compatable with one sensor, though
+        it might be useful to know on which sensor exactly does it
+        not work ok
+        '''
+
         # print(self.orientation.to_euler())
         try:
             x, y, z = self.orientation.to_euler()
@@ -227,6 +244,7 @@ class SensorGroup:
         vertical_posture: bool = True
         horisontal_posture: bool = True
         posture_to_str: Dict[bool, str] = {True: 'OK', False: 'F'}
+
         if abs(y - self.optimal_position[1]) > 5:
             vertical_posture = False
         if abs(x - self.optimal_position[0]) > 5:
@@ -240,12 +258,13 @@ Horisontal: {posture_to_str[horisontal_posture]}; {datetime.now()}')
         if port and (not vertical_posture or not horisontal_posture):
             port.write(bytearray(b'1'))
 
-
     def __str__(self) -> str:
         return f'{str(self.acc)} | {str(self.gyro)})'
 
 
 class PosturePosition:
+
+    BAD_POSTURE_DEGREE: int = 5
 
     def __init__(self) -> None:
         '''
@@ -258,7 +277,43 @@ class PosturePosition:
         self.sensor_groups = (self.upper_sensor_group, self.lower_sensor_group)
         self.num_of_groups: int = 2
 
-    def get_sensor_data(self, data: List[List[List[float]]], file_obj=None) -> None:
+
+    def check_current_posture(self, port: serial.Serial = None) -> None:
+        '''
+        Checks the posture based on reading from two sensors
+        '''
+
+        changes = zip(self.upper_sensor_group.deviation_from_optimal(),
+                      self.lower_sensor_group.deviation_from_optimal())
+        changes = map(lambda x: abs(abs(x[0]) - abs(x[1])), changes)
+
+        idx_to_dimenstion = {0: 'x', 1: 'y', 2: 'z'}
+        posture_to_str: Dict[bool, str] = {True: 'OK', False: 'F'}
+
+        posture: bool = True
+        for idx, elm in enumerate(changes):
+            if elm > self.BAD_POSTURE_DEGREE:
+                posture = False
+                break
+
+        outstr = f'Posture in {datetime.now()} is {posture_to_str[posture]}. '
+        if not posture:
+            outstr += f'There is a problem with {idx_to_dimenstion[idx]}'
+        print(outstr)
+
+        # in case the posture is bad, writes 1 to the serial port so
+        # it would be handled and the led would be powered
+        if port and not posture:
+            port.write(bytearray(b'1'))
+
+
+    def set_sensor_data(self, data: List[List[List[float]]], file_obj=None) -> None:
+        '''
+        Receives a list of data with measurements: [[[acc], [gyro]], [[acc], [gyro]]]
+        Sets it into allocated memory for it (created instance of class so to make
+        it go to its calibratio buffer etc.)
+        '''
+
         outstr: str = ''
         for line, sensor_group in zip(data, self.sensor_groups):
             acc, gyro = line
@@ -273,6 +328,8 @@ class PosturePosition:
 
     def preprocess_data_from_file(self, line: str) -> List[List[List[float]]]:
         '''
+        Preprocesses data from csv file, in ordet ro return it 
+        in such outlook: [[[acc], [gyro]], [[acc], [gyro]]]
         '''
 
         line = line.split(', ')[2:] # ommits the human and machine time
@@ -286,6 +343,8 @@ class PosturePosition:
     def preprocess_data(self, line: bytes) -> List[List[List[float]]]:
         '''
         Converts line of data from str or byte string into somekind of lists
+        Line looks like acc_x, acc_y, acc_z; gyro_x, gyro_y, gyro_z|\
+        acc_x, acc_y, acc_z; gyro_x, gyro_y, gyro_z
         '''
 
         SENSOR_GROUP_SEPARATOR = '|'
@@ -364,10 +423,6 @@ class PosturePosition:
             return True 
 
         return False
-
-
-    def set_optimal_position(self, optimal_position: Tuple[float]) -> None:
-        self.optimal_position = optimal_position
     
     def process_data_from_file(self, from_file, name, path):
         to_file = path + 'angles_' + name.split('.')[0] + '.csv'
