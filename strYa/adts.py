@@ -348,8 +348,8 @@ class PosturePosition:
     def set_optimal_position(self, optimal_position: Tuple[float]) -> None:
         self.optimal_position = optimal_position
     
-    def process_data_from_file(self, from_file):
-        to_file = 'angles_' + from_file.split('.')[0] + '.csv'
+    def process_data_from_file(self, from_file, name, path):
+        to_file = path + 'angles_' + name.split('.')[0] + '.csv'
         file_to_write = open(to_file, 'w')
         writer = csv.writer(file_to_write)
         writer.writerow(['human_time', 'computer_time', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2'])
@@ -365,11 +365,13 @@ class PosturePosition:
                     acc, gyro = sensors_data[i:i+3], sensors_data[i+3:i+6]
                     sensor_group.acc.set_values(acc)
                     sensor_group.gyro.set_values(gyro)
+                    i += 6
                 if not self.lower_sensor_group.gyro.settings:
                     print('. . .')
                     continue
                 orientations = []
                 for sensor_group in self.sensor_groups:
+                    #print(sensor_group.name)
                     sensor_group.count_orientation()
                     if sensor_group.optimal_position is None:
                         continue
@@ -383,10 +385,16 @@ class PosturePosition:
         writer.writerow(['0', '0'] + optimal_orientations)
         file_to_write.close()
                         
-
-
+# from analyze_data_polar import plot_polar
+# from analyze_data_timeline import plot_timeline
+# path = 'C:/Users/ADMIN/Documents/strYa/datasets/walking/'
+# name = 'walking.txt'
+# filename = path + name
 # posture = PosturePosition()
-# posture.process_data_from_file('falling_2.txt')
+# posture.process_data_from_file(filename, name, path)
+# filename = 'angles_' + name.split('.')[0] + '.csv'
+# plot_polar(filename, path)
+# plot_timeline(filename, path)
 
 # if __name__ == '__main__':
 #     posture = PosturePosition()
