@@ -190,10 +190,6 @@ class SensorGroup:
         self.filter = Mahony(frequency=5)
 
     def count_orientation(self, only_count: bool = False) -> None:
-        if self.name == 'lower one':
-            # print(f'{self.name}: {self.orientation}') - there is some prroblem, no idea what exactly
-            # print(self.acc, self.gyro) -> this works fine to me
-            pass
 
         self.orientation = QuaternionContainer(self.filter.updateIMU(self.orientation.as_numpy_array(),
                                                                      self.gyro.current_value_np,
@@ -202,15 +198,10 @@ class SensorGroup:
         if only_count:
             return
 
-        if self.optimal_position is not None:
-            return
-        if not self.buffer.is_filled():
-            self.buffer.push(self.orientation.to_euler())
-            return
+        self.buffer.push(self.orientation.to_euler())
         if not self.optimal_position:
             self.optimal_position = self.buffer.optimal_position()
             print(f'Optimal position of {self.name} sensor grroup is estimated, it is: {self.optimal_position}\n')
-            self.buffer = None
             return
 
     def deviation_from_optimal(self) -> Tuple[float]:
@@ -276,6 +267,7 @@ class PosturePosition:
         self.lower_sensor_group = SensorGroup('lower one')
         self.sensor_groups = (self.upper_sensor_group, self.lower_sensor_group)
         self.num_of_groups: int = 2
+        self.num_of_bad_posture_measurements: int = 0
 
 
     def check_current_posture(self, port: serial.Serial = None) -> None:
@@ -305,6 +297,11 @@ class PosturePosition:
         # it would be handled and the led would be powered
         if port and not posture:
             port.write(bytearray(b'1'))
+
+        # imcrements variable of bad_posture_masurement
+        # handy in funciton of recalibration, as well
+        if not posture:
+            self.num_of_bad_posture_measurements += 1
 
 
     def set_sensor_data(self, data: List[List[List[float]]], file_obj=None) -> None:
@@ -373,7 +370,7 @@ class PosturePosition:
             outdata.append([acc, gyro])
 
         return outdata
-            
+
 
     def establish_connection(self, baudrate: int = 115200) -> serial.Serial:
         '''

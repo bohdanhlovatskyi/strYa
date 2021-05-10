@@ -47,6 +47,12 @@ def main(from_file: str = None, file_name: str = None) -> None:
     while True:
         iteration += 1
 
+        if iteration < 150 and posture.num_of_bad_posture_measurements > 30:
+            # function will end its execution and called one more time
+            # so to make the calibration one more time
+            print('Oooh, somethig has gone wrong... Wait for recalibration...')
+            return -1
+
         # handles one iterational data receiving both from
         # serial port and user given file with dataset
         if not from_file:
@@ -91,5 +97,10 @@ def main(from_file: str = None, file_name: str = None) -> None:
         file.close()
 
 if __name__ == '__main__':
-    main(from_file='datasets/forward_movements/forward_rotation_with_tilt.txt')
+    filename = 'datasets/forward_movements/forward_rotation_with_tilt.txt'
+    filename = None
+    if main(from_file=filename) == -1:
+        # establishes some kind of recalibration
+        # if rewritting this on microcontroller, need to give it a thought
+        main(from_file=filename)
     # main()
