@@ -14,6 +14,8 @@ from ahrs import Quaternion
 from datetime import datetime
 from time import time
 
+import csv
+
 from abc import ABCMeta, abstractmethod
 from ahrs.filters import Mahony
 
@@ -63,6 +65,7 @@ class Buffer:
 
         # takes three args that represent gyro measuremnts
         gyro_data = np.array(self.data)
+        print(gyro_data)
         bias = tuple(gyro_data.mean(axis=0))
         print(f'Gyro bias is calculated: {bias}')
 
@@ -224,9 +227,9 @@ class SensorGroup:
         vertical_posture: bool = True
         horisontal_posture: bool = True
         posture_to_str: Dict[bool, str] = {True: 'OK', False: 'F'}
-        if abs(y - self.optimal_position[1]) > 10:
+        if abs(y - self.optimal_position[1]) > 5:
             vertical_posture = False
-        if abs(x - self.optimal_position[0]) > 10:
+        if abs(x - self.optimal_position[0]) > 5:
             horisontal_posture = False
 
         print(f'Sensor: {self.name} | Vertical: {posture_to_str[vertical_posture]}; \
@@ -255,7 +258,7 @@ class PosturePosition:
         self.sensor_groups = (self.upper_sensor_group, self.lower_sensor_group)
         self.num_of_groups: int = 2
 
-    def get_sensor_data(self, port: serial.Serial) -> None:
+    def get_sensor_data(self, port: serial.Serial, file_obj=None) -> None:
 
 
         SENSOR_GROUP_SEPARATOR = '|'
@@ -272,7 +275,6 @@ class PosturePosition:
             raise ValueError('Number of data that is read does not match with the number\
     of given sensor groups to read into')
 
-        for_obj_data = []
         for line, sensor_group in zip(data, self.sensor_groups):
             try:
                 acc, gyro = line.split(SENSOR_SEPARATOR)
@@ -283,18 +285,25 @@ class PosturePosition:
             acc = [round(float(i), 2) for i in acc.split(COORDINATE_SEPARATOR)]
             gyro = [round(float(i), 2) for i in gyro.split(COORDINATE_SEPARATOR)]
             # print(sensor_group.name, acc, gyro)
+            sensor_name = sensor_group.name
+            if file_obj:
+                if sensor_name == 'upper one':
+                    file_obj.write(str(datetime.now()) + ', ' + str(time()) + ', ' + ', '.join([str(elm) for elm in [*acc, *gyro]]) + ', ')
+                else:
+                    file_obj.write(', '.join([str(elm) for elm in [*acc, *gyro]]) + '\n')
             sensor_group.gyro.set_values(gyro)
             sensor_group.acc.set_values(acc)
+            
 
     def establish_connection(self, baudrate: int = 115200) -> serial.Serial:
         '''
         Establishes a connection on available port on a given baudrate
         '''
 
-        possible_ports = ['/dev/cu.usbserial-14120',
-                        '/dev/cu.usbserial-14220', 
-                        '/dev/cu.usbserial-14240'
-                        'COM3']
+        possible_ports = ['COM3',\
+                        '/dev/cu.usbserial-14120',\
+                        '/dev/cu.usbserial-14220',\
+                        '/dev/cu.usbserial-14240']
 
         for port in possible_ports:
             try:
@@ -338,12 +347,51 @@ class PosturePosition:
 
     def set_optimal_position(self, optimal_position: Tuple[float]) -> None:
         self.optimal_position = optimal_position
+    
+    def process_data_from_file(self, from_file):
+        to_file = 'angles_' + from_file.split('.')[0] + '.csv'
+        file_to_write = open(to_file, 'w')
+        writer = csv.writer(file_to_write)
+        writer.writerow(['human_time', 'computer_time', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2'])
+        with open(from_file) as data:
+            data.readline()
+            data = data.readlines()
+            for line in data:
+                sensors_data = line.split(', ')
+                human_time, computer_time = sensors_data.pop(0), float(sensors_data.pop(0))
+                sensors_data = [float(i) for i in sensors_data]
+                i = 0
+                for sensor_group in self.sensor_groups:
+                    acc, gyro = sensors_data[i:i+3], sensors_data[i+3:i+6]
+                    sensor_group.acc.set_values(acc)
+                    sensor_group.gyro.set_values(gyro)
+                if not self.lower_sensor_group.gyro.settings:
+                    print('. . .')
+                    continue
+                orientations = []
+                for sensor_group in self.sensor_groups:
+                    sensor_group.count_orientation()
+                    if sensor_group.optimal_position is None:
+                        continue
+                    orientations.extend(sensor_group.orientation.to_euler())
+                if orientations:
+                    orientations = [human_time, computer_time] + [str(i) for i in orientations]
+                    writer.writerow(orientations)
+        optimal_orientations = []
+        for sensor_group in self.sensor_groups:
+            optimal_orientations.extend([str(i) for i in sensor_group.optimal_position])
+        writer.writerow(['0', '0'] + optimal_orientations)
+        file_to_write.close()
+                        
 
 
-if __name__ == '__main__':
-    posture = PosturePosition()
-    print(posture.upper_sensor_group.gyro)
-    for i in range(26):
-        posture.upper_sensor_group.gyro.set_values([i, i, i])
-    print(posture.upper_sensor_group.gyro)
-    print(posture.upper_sensor_group.gyro.settings)
+# posture = PosturePosition()
+# posture.process_data_from_file('falling_2.txt')
+
+# if __name__ == '__main__':
+#     posture = PosturePosition()
+#     print(posture.upper_sensor_group.gyro)
+#     for i in range(26):
+#         posture.upper_sensor_group.gyro.set_values([i, i, i])
+#     print(posture.upper_sensor_group.gyro)
+#     print(posture.upper_sensor_group.gyro.settings)

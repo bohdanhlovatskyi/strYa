@@ -4,7 +4,7 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
-int led = 13;
+int led = 7;
 int state = 0;
 
 Adafruit_MPU6050 mpu;
