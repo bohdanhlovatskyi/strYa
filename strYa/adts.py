@@ -9,7 +9,7 @@ could be used to analyse data written to a dataset.
 import numpy as np
 import math
 import serial
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Union
 from ahrs import Quaternion
 from datetime import datetime
 from time import time
@@ -258,13 +258,39 @@ class PosturePosition:
         self.sensor_groups = (self.upper_sensor_group, self.lower_sensor_group)
         self.num_of_groups: int = 2
 
-    def get_sensor_data(self, port: serial.Serial, file_obj=None) -> None:
+    def get_sensor_data(self, data: List[List[List[float]]], file_obj=None) -> None:
+        outstr: str = ''
+        for line, sensor_group in zip(data, self.sensor_groups):
+            acc, gyro = line
+            outstr += ', '.join([str(elm) for elm in [*acc, *gyro]]) + ', '
+            sensor_group.gyro.set_values(gyro)
+            sensor_group.acc.set_values(acc)
 
+        if file_obj:
+            outstr = str(datetime.now()) + ', ' + str(time()) + ', ' + \
+                    outstr.rstrip(', ') + '\n'
+            file_obj.write(outstr)
+
+    def preprocess_data_from_file(self, line: str) -> List[List[List[float]]]:
+        '''
+        '''
+
+        line = line.split(', ')[2:] # ommits the human and machine time
+        line = [float(elm) for elm in line]
+        outlst = []
+        for sensor_group in (line[:6], line[6:]):
+            outlst.append([sensor_group[:3], sensor_group[3:]])
+
+        return outlst
+
+    def preprocess_data(self, line: bytes) -> List[List[List[float]]]:
+        '''
+        Converts line of data from str or byte string into somekind of lists
+        '''
 
         SENSOR_GROUP_SEPARATOR = '|'
         SENSOR_SEPARATOR = '; '
         COORDINATE_SEPARATOR = ', '
-        line = port.readline()
 
         try:
             data = line.decode('utf-8').rstrip('\r\n').split(SENSOR_GROUP_SEPARATOR)
@@ -275,6 +301,7 @@ class PosturePosition:
             raise ValueError('Number of data that is read does not match with the number\
     of given sensor groups to read into')
 
+        outdata = []
         for line, sensor_group in zip(data, self.sensor_groups):
             try:
                 acc, gyro = line.split(SENSOR_SEPARATOR)
@@ -284,15 +311,9 @@ class PosturePosition:
             # time is saved at the time of creation of an object
             acc = [round(float(i), 2) for i in acc.split(COORDINATE_SEPARATOR)]
             gyro = [round(float(i), 2) for i in gyro.split(COORDINATE_SEPARATOR)]
-            # print(sensor_group.name, acc, gyro)
-            sensor_name = sensor_group.name
-            if file_obj:
-                if sensor_name == 'upper one':
-                    file_obj.write(str(datetime.now()) + ', ' + str(time()) + ', ' + ', '.join([str(elm) for elm in [*acc, *gyro]]) + ', ')
-                else:
-                    file_obj.write(', '.join([str(elm) for elm in [*acc, *gyro]]) + '\n')
-            sensor_group.gyro.set_values(gyro)
-            sensor_group.acc.set_values(acc)
+            outdata.append([acc, gyro])
+
+        return outdata
             
 
     def establish_connection(self, baudrate: int = 115200) -> serial.Serial:

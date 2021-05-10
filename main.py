@@ -2,28 +2,63 @@
 Script module
 '''
 
+from time import sleep
 from strYa.adts import SensorGroup, Accelerometer,\
                         Gyro, Buffer, QuaternionContainer,\
                         PosturePosition
 
-def main(file_name=None) -> None:
+COLUMNS_NAMES = ['human_time', 'computer_time', 'x_acc_1', 'y_acc_1', 'z_acc_1', 'x_gyro_1', 'y_gyro_1', 'z_gyro_1',\
+        'x_acc_2', 'y_acc_2', 'z_acc_2', 'x_gyro_2', 'y_gyro_2', 'z_gyro_2']
+
+def main(from_file: str = None, file_name: str = None) -> None:
     '''
-    Script function
+    Script function. Allows to write the info info file, if the filename is
+    specified.
+
+    Has two modes of working:
+    - direct when the user uses the devise that transmits some data
+    through the serial port
+    - if the from_file param is specified, reads data from datasets
+    and displays in the terminal how the system would behave with
+    such measurements. Useful for degub and test writing
     '''
 
     # creates an instance of posture position class, which
     # allocates memory for 4 sensors (combined in two sensor groups)
     posture = PosturePosition()
-    port = posture.establish_connection()
-    file = open(file_name, 'w')
-    names_of_columns = ['human_time', 'computer_time', 'x_acc_1', 'y_acc_1', 'z_acc_1', 'x_gyro_1', 'y_gyro_1', 'z_gyro_1',\
-        'x_acc_2', 'y_acc_2', 'z_acc_2', 'x_gyro_2', 'y_gyro_2', 'z_gyro_2']
-    file.write(', '.join(names_of_columns) + '\n')
+
+    # establishes source of data
+    if from_file is None:
+        port = posture.establish_connection()
+    else:
+        port = None # in order not to break the func that goes next
+        with open(from_file) as infile:
+            file_data = infile.readlines()[1:]
+
+    # opens a file for writing if there is a filename specified.
+    # tries to write the csv header into the file
+    file = open(file_name, 'w') if file_name else None
+    try:
+        file.write(', '.join(COLUMNS_NAMES) + '\n')
+    except Exception:
+        pass
+
     iteration: int = 0  
     while True:
         iteration += 1
 
-        posture.get_sensor_data(port, file)
+        # handles one iterational data receiving both from
+        # serial port and user given file with dataset
+        if not from_file:
+            line = port.readline()
+            data = posture.preprocess_data(line)
+        else:
+            sleep(0.1)
+            line = file_data[iteration]
+            data = posture.preprocess_data_from_file(line)
+
+        # because data from port works with different separator
+        posture.get_sensor_data(data, file)
         if not posture.lower_sensor_group.gyro.settings:
             # waits for bias that will be then applied to each element
             print('. . .')
@@ -42,33 +77,8 @@ def main(file_name=None) -> None:
             except TypeError: # while optimal position is not
                 # calculated typeerror will be raised by check current pos func
                 continue
-
-def process(raw_data):
-    posture = PosturePosition()
-    iteration: int = 0  
-    while True:
-        iteration += 1
-
-        if not posture.lower_sensor_group.gyro.settings:
-            sensor_group.gyro.set_values(gyro)
-            sensor_group.acc.set_values(acc)
-            # waits for bias that will be then applied to each element
-            print('. . .')
-            continue
-
-        for sensor_group in posture.sensor_groups:
-
-            # skips some iteration so to the sensors could stabilise
-            if iteration < 100:
-                sensor_group.count_orientation(only_count=True)
-            else:
-                sensor_group.count_orientation()
-            try:
-                # port in which we will write in case if the posture is bad
-                sensor_group.check_current_posture(port=port)
-            except TypeError: # while optimal position is not
-                # calculated typeerror will be raised by check current pos func
-                continue
+    else:
+        file.close()
 
 if __name__ == '__main__':
-    main()
+    main(from_file='datasets/forward_movements/forward_tilt.txt')
