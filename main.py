@@ -98,7 +98,7 @@ def main(from_file: str = None, file_name: str = None) -> None:
 
 if __name__ == '__main__':
     filename = 'datasets/forward_movements/forward_rotation_with_tilt.txt'
-    filename = None
+    # filename = None
     if main(from_file=filename) == -1:
         # establishes some kind of recalibration
         # if rewritting this on microcontroller, need to give it a thought
