@@ -246,8 +246,8 @@ Horisontal: {posture_to_str[horisontal_posture]}; {datetime.now()}')
 
         # in case the posture is bad, writes 1 to the serial port so
         # it would be handled and the led would be powered
-        if port and (not vertical_posture or not horisontal_posture):
-            port.write(bytearray(b'1'))
+        # if port and (not vertical_posture or not horisontal_posture):
+        #     port.write(bytearray(b'1'))
 
     def __str__(self) -> str:
         return f'{str(self.acc)} | {str(self.gyro)})'
@@ -268,6 +268,8 @@ class PosturePosition:
         self.sensor_groups = (self.upper_sensor_group, self.lower_sensor_group)
         self.num_of_groups: int = 2
         self.num_of_bad_posture_measurements: int = 0
+        # not efficient realisation, can be rewritten via bytearray ot sth
+        self.posture_state_buffer = Buffer(10)
 
 
     def check_current_posture(self, port: serial.Serial = None) -> None:
@@ -280,28 +282,30 @@ class PosturePosition:
         changes = map(lambda x: abs(abs(x[0]) - abs(x[1])), changes)
 
         idx_to_dimenstion = {0: 'x', 1: 'y', 2: 'z'}
-        posture_to_str: Dict[bool, str] = {True: 'OK', False: 'F'}
+        posture_to_str: Dict[bool, str] = {False: 'OK', True: 'F'}
 
-        posture: bool = True
+        bad_posture: bool = False
         for idx, elm in enumerate(changes):
             if elm > self.BAD_POSTURE_DEGREE:
-                posture = False
+                bad_posture = True
                 break
 
-        outstr = f'Posture in {datetime.now()} is {posture_to_str[posture]}. '
-        if not posture:
+        # for analysing variables incrementation
+        self.posture_state_buffer.push(bad_posture)
+        # imcrements variable of bad_posture_masurement
+        # handy in funciton of recalibration, as well
+        if bad_posture:
+            self.num_of_bad_posture_measurements += 1
+
+        outstr = f'Posture in {datetime.now()} is {posture_to_str[bad_posture]}. '
+        if bad_posture:
             outstr += f'There is a problem with {idx_to_dimenstion[idx]}'
         print(outstr)
 
         # in case the posture is bad, writes 1 to the serial port so
         # it would be handled and the led would be powered
-        if port and not posture:
+        if port and all(self.posture_state_buffer.data):
             port.write(bytearray(b'1'))
-
-        # imcrements variable of bad_posture_masurement
-        # handy in funciton of recalibration, as well
-        if not posture:
-            self.num_of_bad_posture_measurements += 1
 
 
     def set_sensor_data(self, data: List[List[List[float]]], file_obj=None) -> None:
