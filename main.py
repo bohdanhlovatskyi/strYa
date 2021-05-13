@@ -47,7 +47,7 @@ def main(from_file: str = None, file_name: str = None) -> None:
     while True:
         iteration += 1
 
-        if iteration < 150 and posture.num_of_bad_posture_measurements > 30:
+        if iteration < 100 and posture.num_of_bad_posture_measurements > 30:
             # function will end its execution and called one more time
             # so to make the calibration one more time
             print('Oooh, somethig has gone wrong... Wait for recalibration...')

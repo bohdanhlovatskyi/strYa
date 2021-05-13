@@ -1,29 +1,15 @@
 ## strYa
 
-## TODO
-- винести аналіз дейти в інший клас
-- потестити на більших частотах
-- постворювати депенденси
-- візуалізація в блокнотах
-- !!!!!!!!! написати рідмі )))
-- написати тести :=(
-
-!!! Загалом кажучи, то коду для прототипу досить - попідкручувати основну логіку
-та й досить - в майбутньому можна прописати хороше логування, але це варто робити
-вже після аналізу наявних датасетів, що дозволить зрозуміти, що саме в ті логи включати
-і як дібратись до тої інфи
-
-Дуже в майбутньому :=) 
-- хардова частина: прототип + по трохи щось писати на сам контролер
-
 ## Table of contents
- - [TODO](#todo)
+ - [Description](#description)
  - [Getting started](#getting-started)
    - [Prerequisites](#prerequisites)
    - [Installing](#installing)
    - [Usage](#usage)
  - [Team](#team)
  - [License and Copyright](license-and-copyright)
+
+## Description
 
 ## Getting started
 
@@ -42,14 +28,17 @@
   ```bash
   $ git clone https://github.com/bohdanhlovatskyi/strYa  
   ```
-  2. Connect the components in the following way: <img src="scheme.png" alt="connection scheme" width=600>
-  3. Connect the Arduino microcontroller to your computer via serail port.
-  4. Build and run the project.
+  1. Connect the components in the following way: ![Alt text](wiki/schematic.png?raw=true "Title")
+  2. Connect the Arduino microcontroller to your computer via serail port.
+  3. Build and run the project.
 
 ### Usage 
 
 
 ## Team
-| **Bohdan Hlovatskyi** | **Kayna Volokhatiuk** | **Yuriy Sukhorskyy** |
+| **Bohdan Hlovatskyi** | **Karyna Volokhatiuk** | **Yuriy Sukhorskyy** |
 
 ## License and Copyright
+This project is licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
+
+© 2021 Bohdan Hlovatskyi, Karyna Volokhatiuk

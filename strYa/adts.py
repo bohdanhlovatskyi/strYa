@@ -279,7 +279,10 @@ class PosturePosition:
 
         changes = zip(self.upper_sensor_group.deviation_from_optimal(),
                       self.lower_sensor_group.deviation_from_optimal())
-        changes = map(lambda x: abs(abs(x[0]) - abs(x[1])), changes)
+        changes = list(map(lambda x: abs(abs(x[0]) - abs(x[1])), changes))
+
+        # omits one of angles because it does not work yet
+        changes = changes[:2]
 
         idx_to_dimenstion = {0: 'x', 1: 'y', 2: 'z'}
         posture_to_str: Dict[bool, str] = {False: 'OK', True: 'F'}
