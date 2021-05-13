@@ -18,10 +18,10 @@
 |------------------------------	|---------------------------------------	|
 | Arduino Nano MCU    	        | data transfer/processing              	|
 | 2x MPU 6050 (GY 521) IMU      | collecting measurements on the posture  |
-| Mini-USB Cable               	| power supply                           	|
-| LED                           | indicates that the bad posture (will be rpelaced) |
-| 220 Resistor                  | to connect LED                          |
 | HC-05 (ZS-040) BLE module     | Serial data trnasmission via bluetooth low energy |
+| 220 ohm, 1K and 2K Resistors                 | to connect the components                        |
+| LED                           | indicates that the bad posture (will be rpelaced) |
+| Mini-USB Cable               	| power supply                           	|
 
 ### Installing
   1. Clone project.
