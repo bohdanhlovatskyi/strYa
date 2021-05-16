@@ -9,7 +9,7 @@ could be used to analyse data written to a dataset.
 import numpy as np
 import math
 import serial
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Union
 from ahrs import Quaternion
 from datetime import datetime
 from time import time
@@ -69,7 +69,6 @@ class Buffer:
 
         # takes three args that represent gyro measuremnts
         gyro_data = np.array(self.data)
-        print(gyro_data)
         bias = tuple(gyro_data.mean(axis=0))
         print(f'Gyro bias is calculated: {bias}')
 
@@ -195,10 +194,6 @@ class SensorGroup:
         self.filter = Mahony(frequency=5)
 
     def count_orientation(self, only_count: bool = False) -> None:
-        if self.name == 'lower one':
-            # print(f'{self.name}: {self.orientation}') - there is some prroblem, no idea what exactly
-            # print(self.acc, self.gyro) -> this works fine to me
-            pass
 
         self.orientation = QuaternionContainer(self.filter.updateIMU(self.orientation.as_numpy_array(),
                                                                      self.gyro.current_value_np,
@@ -206,19 +201,32 @@ class SensorGroup:
         if only_count:
             return
 
-        if self.optimal_position is not None:
-            return
-        if not self.buffer.is_filled():
-            self.buffer.push(self.orientation.to_euler())
-            return
+        self.buffer.push(self.orientation.to_euler())
         if not self.optimal_position:
             self.optimal_position = self.buffer.optimal_position()
-            print(self.buffer.data)
             print(f'Optimal position of {self.name} sensor grroup is estimated, it is: {self.optimal_position}\n')
-            self.buffer = None
             return
 
-    def check_current_posture(self, port: serial.Serial = None) -> None:
+    def deviation_from_optimal(self) -> Tuple[float]:
+        try:
+            x, y, z = self.orientation.to_euler()
+        except TypeError:
+            return
+        except AttributeError: 
+            return
+
+        return (abs(x - self.optimal_position[0]), 
+                abs(y - self.optimal_position[1]),
+                abs(z - self.optimal_position[2]))
+
+    def _check_current_posture_one_sensor(self, port: serial.Serial = None) -> None:
+        '''
+        This function is kinda deprecated because works well
+        only with logic compatable with one sensor, though
+        it might be useful to know on which sensor exactly does it
+        not work ok
+        '''
+
         # print(self.orientation.to_euler())
         try:
             x, y, z = self.orientation.to_euler()
@@ -230,6 +238,7 @@ class SensorGroup:
         vertical_posture: bool = True
         horisontal_posture: bool = True
         posture_to_str: Dict[bool, str] = {True: 'OK', False: 'F'}
+
         if abs(y - self.optimal_position[1]) > 5:
             vertical_posture = False
         if abs(x - self.optimal_position[0]) > 5:
@@ -240,15 +249,16 @@ Horisontal: {posture_to_str[horisontal_posture]}; {datetime.now()}')
 
         # in case the posture is bad, writes 1 to the serial port so
         # it would be handled and the led would be powered
-        if port and (not vertical_posture or not horisontal_posture):
-            port.write(bytearray(b'1'))
-
+        # if port and (not vertical_posture or not horisontal_posture):
+        #     port.write(bytearray(b'1'))
 
     def __str__(self) -> str:
         return f'{str(self.acc)} | {str(self.gyro)})'
 
 
 class PosturePosition:
+
+    BAD_POSTURE_DEGREE: int = 5
 
     def __init__(self) -> None:
         '''
@@ -260,14 +270,97 @@ class PosturePosition:
         self.lower_sensor_group = SensorGroup('lower one')
         self.sensor_groups = (self.upper_sensor_group, self.lower_sensor_group)
         self.num_of_groups: int = 2
+        self.num_of_bad_posture_measurements: int = 0
+        # not efficient realisation, can be rewritten via bytearray ot sth
+        self.posture_state_buffer = Buffer(10)
 
+
+    def check_current_posture(self, port: serial.Serial = None) -> None:
+        '''
+        Checks the posture based on reading from two sensors
+        '''
+
+        changes = zip(self.upper_sensor_group.deviation_from_optimal(),
+                      self.lower_sensor_group.deviation_from_optimal())
+        changes = list(map(lambda x: abs(abs(x[0]) - abs(x[1])), changes))
+
+        # omits one of angles because it does not work yet
+        changes = changes[:2]
+
+        idx_to_dimenstion = {0: 'x', 1: 'y', 2: 'z'}
+        posture_to_str: Dict[bool, str] = {False: 'OK', True: 'F'}
+
+        bad_posture: bool = False
+        for idx, elm in enumerate(changes):
+            if elm > self.BAD_POSTURE_DEGREE:
+                bad_posture = True
+                break
+
+<<<<<<< HEAD
     def get_sensor_data(self, port: serial.Serial, writer=None) -> None:
+=======
+        # for analysing variables incrementation
+        self.posture_state_buffer.push(bad_posture)
+        # imcrements variable of bad_posture_masurement
+        # handy in funciton of recalibration, as well
+        if bad_posture:
+            self.num_of_bad_posture_measurements += 1
+>>>>>>> cb9ab5cdb24fa7782635b66d32410d347511818e
 
+        outstr = f'Posture in {datetime.now()} is {posture_to_str[bad_posture]}. '
+        if bad_posture:
+            outstr += f'There is a problem with {idx_to_dimenstion[idx]}'
+        print(outstr)
+
+        # in case the posture is bad, writes 1 to the serial port so
+        # it would be handled and the led would be powered
+        if port and all(self.posture_state_buffer.data):
+            port.write(bytearray(b'1'))
+
+
+    def set_sensor_data(self, data: List[List[List[float]]], file_obj=None) -> None:
+        '''
+        Receives a list of data with measurements: [[[acc], [gyro]], [[acc], [gyro]]]
+        Sets it into allocated memory for it (created instance of class so to make
+        it go to its calibratio buffer etc.)
+        '''
+
+        outstr: str = ''
+        for line, sensor_group in zip(data, self.sensor_groups):
+            acc, gyro = line
+            outstr += ', '.join([str(elm) for elm in [*acc, *gyro]]) + ', '
+            sensor_group.gyro.set_values(gyro)
+            sensor_group.acc.set_values(acc)
+
+        if file_obj:
+            outstr = str(datetime.now()) + ', ' + str(time()) + ', ' + \
+                    outstr.rstrip(', ') + '\n'
+            file_obj.write(outstr)
+
+    def preprocess_data_from_file(self, line: str) -> List[List[List[float]]]:
+        '''
+        Preprocesses data from csv file, in ordet ro return it 
+        in such outlook: [[[acc], [gyro]], [[acc], [gyro]]]
+        '''
+
+        line = line.split(', ')[2:] # ommits the human and machine time
+        line = [float(elm) for elm in line]
+        outlst = []
+        for sensor_group in (line[:6], line[6:]):
+            outlst.append([sensor_group[:3], sensor_group[3:]])
+
+        return outlst
+
+    def preprocess_data(self, line: bytes) -> List[List[List[float]]]:
+        '''
+        Converts line of data from str or byte string into somekind of lists
+        Line looks like acc_x, acc_y, acc_z; gyro_x, gyro_y, gyro_z|\
+        acc_x, acc_y, acc_z; gyro_x, gyro_y, gyro_z
+        '''
 
         SENSOR_GROUP_SEPARATOR = '|'
         SENSOR_SEPARATOR = '; '
         COORDINATE_SEPARATOR = ', '
-        line = port.readline()
 
         try:
             data = line.decode('utf-8').rstrip('\r\n').split(SENSOR_GROUP_SEPARATOR)
@@ -278,6 +371,7 @@ class PosturePosition:
             raise ValueError('Number of data that is read does not match with the number\
     of given sensor groups to read into')
 
+        outdata = []
         for line, sensor_group in zip(data, self.sensor_groups):
             try:
                 acc, gyro = line.split(SENSOR_SEPARATOR)
@@ -287,27 +381,18 @@ class PosturePosition:
             # time is saved at the time of creation of an object
             acc = [round(float(i), 2) for i in acc.split(COORDINATE_SEPARATOR)]
             gyro = [round(float(i), 2) for i in gyro.split(COORDINATE_SEPARATOR)]
-            # print(sensor_group.name, acc, gyro)
             sensor_name = sensor_group.name
-
-            # writer.writerow(data[0].strip().split(', '))
-            # data = data[1:]
-            # for values in data:
-            #     values = values.split(', ')
-            #     values = [values[0]] + [float(i) for i in values[1:]]
-            #     writer.writerow(values)
             if writer:
                 if sensor_name == 'upper one':
                     data = [datetime.now()]+[time()]+acc+gyro
-                    # file_obj.writerow([datetime.now()]+[time()]+acc+gyro)
-                    # file_obj.write(str(datetime.now()) + ', ' + str(time()) + ', ' + ', '.join([str(elm) for elm in [*acc, *gyro]]) + ', ')
                 else:
                     data += acc + gyro
                     writer.writerow(data)
-                    # file_obj.write(', '.join([str(elm) for elm in [*acc, *gyro]]) + '\n')
             sensor_group.gyro.set_values(gyro)
             sensor_group.acc.set_values(acc)
-            
+            outdata.append([acc, gyro])
+
+        return outdata
 
     def establish_connection(self, baudrate: int = 115200) -> serial.Serial:
         '''
@@ -358,13 +443,12 @@ class PosturePosition:
 
         return False
 
-
     def set_optimal_position(self, optimal_position: Tuple[float]) -> None:
         self.optimal_position = optimal_position
-    def process_data_from_file(self, from_file, to_file):
-        # to_file = 'angles_' + from_file
+    def process_data_from_file(self, from_file):
+        to_file = 'angles_' + from_file
         file_to_write = open(to_file, 'w')
-        writer = csv.writer(file_to_write)
+        writer = csv.writer(to_file)
         writer.writerow(['human_time', 'computer_time', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2'])
         df = pd.read_csv(from_file)
         human_time = df['human_time'].tolist()
@@ -395,70 +479,21 @@ class PosturePosition:
                 continue
             orientations = []
             for sensor_group in self.sensor_groups:
-                #print(sensor_group.name)
                 sensor_group.count_orientation()
                 if sensor_group.optimal_position is None:
                     continue
-                # orientations.extend(sensor_group.orientation)
-                #orientations.extend(sensor_group.orientation.to_euler())
-                r = R.from_quat(sensor_group.orientation.as_numpy_array().tolist())
-                orient = r.as_euler('zyx', degrees=True).tolist()
-                orientations.extend(orient)
+                orientations.extend(sensor_group.orientation.to_euler())
             if orientations:
                 orientations = [human_time[i], computer_time[i]] + orientations
-                # print(orientations)
                 writer.writerow(orientations)
         optimal_orientations = []
-        #human_time,computer_time,x_acc_1,
         for sensor_group in self.sensor_groups:
             optimal_orientations.extend([str(i) for i in sensor_group.optimal_position])
         writer.writerow(['0', '0'] + optimal_orientations)
         file_to_write.close()
-        # y_acc_1,z_acc_1,x_gyro_1,y_gyro_1,z_gyro_1,
-        # x_acc_2,y_acc_2,z_acc_2,x_gyro_2,y_gyro_2,z_gyro_2
-    # def process_data_from_file(self, from_file, name, path):
-    #     to_file = path + 'angles_' + name.split('.')[0] + '.csv'
-    #     file_to_write = open(to_file, 'w')
-    #     writer = csv.writer(file_to_write)
-    #     writer.writerow(['human_time', 'computer_time', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2'])
-    #     with open(from_file) as data:
-    #         data.readline()
-    #         data = data.readlines()
-    #         for line in data:
-    #             sensors_data = line.split(', ')
-    #             human_time, computer_time = sensors_data.pop(0), float(sensors_data.pop(0))
-    #             sensors_data = [float(i) for i in sensors_data]
-    #             i = 0
-    #             for sensor_group in self.sensor_groups:
-    #                 acc, gyro = sensors_data[i:i+3], sensors_data[i+3:i+6]
-    #                 sensor_group.acc.set_values(acc)
-    #                 sensor_group.gyro.set_values(gyro)
-    #                 i += 6
-    #             if not self.lower_sensor_group.gyro.settings:
-    #                 print('. . .')
-    #                 continue
-    #             orientations = []
-    #             for sensor_group in self.sensor_groups:
-    #                 #print(sensor_group.name)
-    #                 sensor_group.count_orientation()
-    #                 if sensor_group.optimal_position is None:
-    #                     continue
-    #                 orientations.extend(sensor_group.orientation.to_euler())
-    #             if orientations:
-    #                 orientations = [human_time, computer_time] + [str(i) for i in orientations]
-    #                 writer.writerow(orientations)
-    #     optimal_orientations = []
-    #     for sensor_group in self.sensor_groups:
-    #         optimal_orientations.extend([str(i) for i in sensor_group.optimal_position])
-    #     writer.writerow(['0', '0'] + optimal_orientations)
-    #     file_to_write.close()
 
 class Analyzer:
     def read_data(self, path):
-            # df = pd.read_csv(path)
-    # x1 = df['x1'].tolist()
-    # y1 = df['y1'].tolist()
-    # z1 = df['z1'].tolist()
 
         #data frame from rounded data file
         df = pd.read_csv(path)
@@ -491,15 +526,6 @@ class Analyzer:
         # z2 = df['z2'].tolist()
         return x1, y1, x2, y2
 
-    # def check_mode(self):
-    #     x1, y1 = self.upper_sensor_group.orientation.to_euler()[:2]
-    #     x2, y2 = self.lower_sensor_group.orientation.to_euler()[:2]
-
-    #     x1_opt, y1_opt = self.upper_sensor_group.optimal_position.to_euler()[:2]
-    #     x2_opt, y2_opt = self.lower_sensor_group.optimal_position.to_euler()[:2]
-
-    #     position_data = [x1, y1, x2, y2]
-    #     optimal_data = [x1_opt, y1_opt, x2_opt, y2_opt]
     @staticmethod
     def steady(orient_1, orient_2):
         for orientation in [orient_1, orient_2]:
@@ -548,8 +574,6 @@ class Analyzer:
             print('Side tilt')
 
 
-        
-
     def check_data(self, path):
         x1, y1, x2, y2 = self.read_data(path)
         for i in range(len(x1)):
@@ -560,4 +584,4 @@ if __name__ == '__main__':
     analyze = Analyzer()
     analyze.check_data('angles_sitting_2.csv')
 #     posture = PosturePosition()
-#     posture.process_data_from_file('steady.csv', 'angles_steady.csv')
+#     posture.process_data_from_file('steady.csv')
