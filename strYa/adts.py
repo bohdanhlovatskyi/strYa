@@ -13,7 +13,8 @@ from typing import Dict, Tuple, List
 from ahrs import Quaternion
 from datetime import datetime
 from time import time
-
+import pandas as pd
+from scipy.spatial.transform import Rotation as R
 import csv
 
 from abc import ABCMeta, abstractmethod
@@ -53,7 +54,10 @@ class Buffer:
         '''
 
         data = np.array(self.data)
+        print(data)
         optimal = list(data.mean(axis=0))
+        print('optimal')
+        print(optimal)
         return optimal
 
     def count_gyro_drift(self) -> None:
@@ -199,7 +203,6 @@ class SensorGroup:
         self.orientation = QuaternionContainer(self.filter.updateIMU(self.orientation.as_numpy_array(),
                                                                      self.gyro.current_value_np,
                                                                      self.acc.current_value_np))
-
         if only_count:
             return
 
@@ -258,7 +261,7 @@ class PosturePosition:
         self.sensor_groups = (self.upper_sensor_group, self.lower_sensor_group)
         self.num_of_groups: int = 2
 
-    def get_sensor_data(self, port: serial.Serial, file_obj=None) -> None:
+    def get_sensor_data(self, port: serial.Serial, writer=None) -> None:
 
 
         SENSOR_GROUP_SEPARATOR = '|'
@@ -286,11 +289,22 @@ class PosturePosition:
             gyro = [round(float(i), 2) for i in gyro.split(COORDINATE_SEPARATOR)]
             # print(sensor_group.name, acc, gyro)
             sensor_name = sensor_group.name
-            if file_obj:
+
+            # writer.writerow(data[0].strip().split(', '))
+            # data = data[1:]
+            # for values in data:
+            #     values = values.split(', ')
+            #     values = [values[0]] + [float(i) for i in values[1:]]
+            #     writer.writerow(values)
+            if writer:
                 if sensor_name == 'upper one':
-                    file_obj.write(str(datetime.now()) + ', ' + str(time()) + ', ' + ', '.join([str(elm) for elm in [*acc, *gyro]]) + ', ')
+                    data = [datetime.now()]+[time()]+acc+gyro
+                    # file_obj.writerow([datetime.now()]+[time()]+acc+gyro)
+                    # file_obj.write(str(datetime.now()) + ', ' + str(time()) + ', ' + ', '.join([str(elm) for elm in [*acc, *gyro]]) + ', ')
                 else:
-                    file_obj.write(', '.join([str(elm) for elm in [*acc, *gyro]]) + '\n')
+                    data += acc + gyro
+                    writer.writerow(data)
+                    # file_obj.write(', '.join([str(elm) for elm in [*acc, *gyro]]) + '\n')
             sensor_group.gyro.set_values(gyro)
             sensor_group.acc.set_values(acc)
             
@@ -347,59 +361,203 @@ class PosturePosition:
 
     def set_optimal_position(self, optimal_position: Tuple[float]) -> None:
         self.optimal_position = optimal_position
-    
-    def process_data_from_file(self, from_file, name, path):
-        to_file = path + 'angles_' + name.split('.')[0] + '.csv'
+    def process_data_from_file(self, from_file, to_file):
+        # to_file = 'angles_' + from_file
         file_to_write = open(to_file, 'w')
         writer = csv.writer(file_to_write)
         writer.writerow(['human_time', 'computer_time', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2'])
-        with open(from_file) as data:
-            data.readline()
-            data = data.readlines()
-            for line in data:
-                sensors_data = line.split(', ')
-                human_time, computer_time = sensors_data.pop(0), float(sensors_data.pop(0))
-                sensors_data = [float(i) for i in sensors_data]
-                i = 0
-                for sensor_group in self.sensor_groups:
-                    acc, gyro = sensors_data[i:i+3], sensors_data[i+3:i+6]
-                    sensor_group.acc.set_values(acc)
-                    sensor_group.gyro.set_values(gyro)
-                    i += 6
-                if not self.lower_sensor_group.gyro.settings:
-                    print('. . .')
+        df = pd.read_csv(from_file)
+        human_time = df['human_time'].tolist()
+        computer_time = df['computer_time'].tolist()
+        x_acc_1 = df['x_acc_1'].tolist()
+        y_acc_1 = df['y_acc_1'].tolist()
+        z_acc_1 = df['z_acc_1'].tolist()
+        x_gyro_1 = df['x_gyro_1'].tolist()
+        y_gyro_1 = df['y_gyro_1'].tolist()
+        z_gyro_1 = df['z_gyro_1'].tolist()
+        x_acc_2 = df['x_acc_2'].tolist()
+        y_acc_2 = df['y_acc_2'].tolist()
+        z_acc_2 = df['z_acc_2'].tolist()
+        x_gyro_2 = df['x_gyro_2'].tolist()
+        y_gyro_2 = df['y_gyro_2'].tolist()
+        z_gyro_2 = df['z_gyro_2'].tolist()
+        for i in range(len(x_acc_1)):
+            acc1 = [x_acc_1[i], y_acc_1[i], z_acc_1[i]]
+            acc2 = [x_acc_2[i], y_acc_2[i], z_acc_2[i]]
+            gyro1 = [x_gyro_1[i], y_gyro_1[i], z_gyro_1[i]]
+            gyro2 = [x_gyro_2[i], y_gyro_2[i], z_gyro_2[i]]
+            data = [[acc1, gyro1], [acc2, gyro2]]
+            for index, sensor_group in enumerate(self.sensor_groups):
+                sensor_group.acc.set_values(data[index][0])
+                sensor_group.gyro.set_values(data[index][1])
+            if not self.lower_sensor_group.gyro.settings:
+                print('. . .')
+                continue
+            orientations = []
+            for sensor_group in self.sensor_groups:
+                #print(sensor_group.name)
+                sensor_group.count_orientation()
+                if sensor_group.optimal_position is None:
                     continue
-                orientations = []
-                for sensor_group in self.sensor_groups:
-                    #print(sensor_group.name)
-                    sensor_group.count_orientation()
-                    if sensor_group.optimal_position is None:
-                        continue
-                    orientations.extend(sensor_group.orientation.to_euler())
-                if orientations:
-                    orientations = [human_time, computer_time] + [str(i) for i in orientations]
-                    writer.writerow(orientations)
+                # orientations.extend(sensor_group.orientation)
+                #orientations.extend(sensor_group.orientation.to_euler())
+                r = R.from_quat(sensor_group.orientation.as_numpy_array().tolist())
+                orient = r.as_euler('zyx', degrees=True).tolist()
+                orientations.extend(orient)
+            if orientations:
+                orientations = [human_time[i], computer_time[i]] + orientations
+                # print(orientations)
+                writer.writerow(orientations)
         optimal_orientations = []
+        #human_time,computer_time,x_acc_1,
         for sensor_group in self.sensor_groups:
             optimal_orientations.extend([str(i) for i in sensor_group.optimal_position])
         writer.writerow(['0', '0'] + optimal_orientations)
         file_to_write.close()
-                        
-# from analyze_data_polar import plot_polar
-# from analyze_data_timeline import plot_timeline
-# path = 'C:/Users/ADMIN/Documents/strYa/datasets/walking/'
-# name = 'walking.txt'
-# filename = path + name
-# posture = PosturePosition()
-# posture.process_data_from_file(filename, name, path)
-# filename = 'angles_' + name.split('.')[0] + '.csv'
-# plot_polar(filename, path)
-# plot_timeline(filename, path)
+        # y_acc_1,z_acc_1,x_gyro_1,y_gyro_1,z_gyro_1,
+        # x_acc_2,y_acc_2,z_acc_2,x_gyro_2,y_gyro_2,z_gyro_2
+    # def process_data_from_file(self, from_file, name, path):
+    #     to_file = path + 'angles_' + name.split('.')[0] + '.csv'
+    #     file_to_write = open(to_file, 'w')
+    #     writer = csv.writer(file_to_write)
+    #     writer.writerow(['human_time', 'computer_time', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2'])
+    #     with open(from_file) as data:
+    #         data.readline()
+    #         data = data.readlines()
+    #         for line in data:
+    #             sensors_data = line.split(', ')
+    #             human_time, computer_time = sensors_data.pop(0), float(sensors_data.pop(0))
+    #             sensors_data = [float(i) for i in sensors_data]
+    #             i = 0
+    #             for sensor_group in self.sensor_groups:
+    #                 acc, gyro = sensors_data[i:i+3], sensors_data[i+3:i+6]
+    #                 sensor_group.acc.set_values(acc)
+    #                 sensor_group.gyro.set_values(gyro)
+    #                 i += 6
+    #             if not self.lower_sensor_group.gyro.settings:
+    #                 print('. . .')
+    #                 continue
+    #             orientations = []
+    #             for sensor_group in self.sensor_groups:
+    #                 #print(sensor_group.name)
+    #                 sensor_group.count_orientation()
+    #                 if sensor_group.optimal_position is None:
+    #                     continue
+    #                 orientations.extend(sensor_group.orientation.to_euler())
+    #             if orientations:
+    #                 orientations = [human_time, computer_time] + [str(i) for i in orientations]
+    #                 writer.writerow(orientations)
+    #     optimal_orientations = []
+    #     for sensor_group in self.sensor_groups:
+    #         optimal_orientations.extend([str(i) for i in sensor_group.optimal_position])
+    #     writer.writerow(['0', '0'] + optimal_orientations)
+    #     file_to_write.close()
 
-# if __name__ == '__main__':
+class Analyzer:
+    def read_data(self, path):
+            # df = pd.read_csv(path)
+    # x1 = df['x1'].tolist()
+    # y1 = df['y1'].tolist()
+    # z1 = df['z1'].tolist()
+
+        #data frame from rounded data file
+        df = pd.read_csv(path)
+        rounded = np.round(df)
+
+        #find optimal and delete it from data frame
+        optimal = df.tail(1)
+        x1_optimal = optimal['x1'].tolist()[0]
+        y1_optimal = optimal['y1'].tolist()[0]
+        # # print(x_optimal, y_optimal)
+        #print(optimal)
+        x2_optimal = optimal['x2'].tolist()[0]
+        y2_optimal = optimal['y2'].tolist()[0]
+        df = df.head(-1)
+
+        #find all par for graphs
+        time = df['computer_time'].tolist()
+        start_time = time[0]
+        time = [i-start_time for i in time]
+        x1 = df['x1'].tolist()
+        x1 = [i+x1_optimal for i in x1]
+        y1 = df['y1'].tolist()
+        y1 = [i-y1_optimal for i in y1]
+        # z1 = df['z1'].tolist()
+
+        x2 = df['x2'].tolist()
+        x2 = [i+x2_optimal for i in x2]
+        y2 = df['y2'].tolist()
+        y2 = [i-y2_optimal for i in y2]
+        # z2 = df['z2'].tolist()
+        return x1, y1, x2, y2
+
+    # def check_mode(self):
+    #     x1, y1 = self.upper_sensor_group.orientation.to_euler()[:2]
+    #     x2, y2 = self.lower_sensor_group.orientation.to_euler()[:2]
+
+    #     x1_opt, y1_opt = self.upper_sensor_group.optimal_position.to_euler()[:2]
+    #     x2_opt, y2_opt = self.lower_sensor_group.optimal_position.to_euler()[:2]
+
+    #     position_data = [x1, y1, x2, y2]
+    #     optimal_data = [x1_opt, y1_opt, x2_opt, y2_opt]
+    @staticmethod
+    def steady(orient_1, orient_2):
+        for orientation in [orient_1, orient_2]:
+            for axis in orientation:
+                if abs(axis) > 5:
+                    return False
+        return True
+    @staticmethod
+    def forward_rotation(orient_1, orient_2):
+        y1 = orient_1[1]
+        y2 = orient_2[1]
+        if 30 < abs(y1) < 70 and 30 < abs(y2) < 70:
+            if abs(y1-y1) < 20:
+                return True
+        return False
+    @staticmethod
+    def forward_tilt(orient_1, orient_2):
+        y1 = orient_1[1]
+        y2 = orient_2[1]
+        if 10 < abs(y1) < 25 and abs(y2) < 7:
+            return True
+        #chack sitting
+        if 10 < abs(y1) < 15 and 25 < abc(y2) < 30:
+            return True
+        return False
+
+    @staticmethod
+    def side_tilt(orient_1, orient_2):      
+        x1 = orient_1[0]
+        x2 = orient_2[0]
+        if 10 < abs(x1) < 30 or 10 < abs(x2) < 30:
+                return True
+        return False
+    
+
+    def check_mode(self, x1, y1, x2, y2):
+        orient_1 = (x1, y1)
+        orient_2 = (x2, y2)
+        if self.steady(orient_1, orient_2):
+            print('Steady.')
+        if self.forward_rotation(orient_1, orient_2):
+            print('Forward rotation.')
+        elif self.forward_tilt(orient_1, orient_2):
+            print('Forward tilt.')
+        elif self.side_tilt(orient_1, orient_2):
+            print('Side tilt')
+
+
+        
+
+    def check_data(self, path):
+        x1, y1, x2, y2 = self.read_data(path)
+        for i in range(len(x1)):
+            self.check_mode(x1[i], y1[i], x2[i], y2[i])
+
+
+if __name__ == '__main__':
+    analyze = Analyzer()
+    analyze.check_data('angles_sitting_2.csv')
 #     posture = PosturePosition()
-#     print(posture.upper_sensor_group.gyro)
-#     for i in range(26):
-#         posture.upper_sensor_group.gyro.set_values([i, i, i])
-#     print(posture.upper_sensor_group.gyro)
-#     print(posture.upper_sensor_group.gyro.settings)
+#     posture.process_data_from_file('steady.csv', 'angles_steady.csv')

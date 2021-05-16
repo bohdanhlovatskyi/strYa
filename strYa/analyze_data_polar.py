@@ -49,5 +49,5 @@ def plot_polar(file_name, path):
 
      fig.subplots_adjust(hspace=0.5)
 
-     # plt.show()
-     plt.savefig(new)
+     plt.show()
+     #plt.savefig(new)

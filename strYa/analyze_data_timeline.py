@@ -1,4 +1,3 @@
-from math import radians
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -35,5 +34,5 @@ def plot_timeline(file_name, path):
 
     fig.subplots_adjust(hspace=0.5)
 
-    # plt.show()
-    plt.savefig(new)
+    plt.show()
+    #plt.savefig(new)
