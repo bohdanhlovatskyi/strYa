@@ -1,11 +1,16 @@
 '''
 Script module
+
+TODO: these should be merged into one function
+TODO: check current posture block is obviously bad one,
+should work with analyser class
 '''
 import csv
 from time import time, sleep
 from strYa.adts import SensorGroup, Accelerometer,\
                         Gyro, Buffer, QuaternionContainer,\
                         PosturePosition
+from strYa.analyser import Analyzer
 
 COLUMNS_NAMES = ['human_time', 'computer_time', 'x_acc_1', 'y_acc_1', 'z_acc_1', 'x_gyro_1', 'y_gyro_1', 'z_gyro_1',\
         'x_acc_2', 'y_acc_2', 'z_acc_2', 'x_gyro_2', 'y_gyro_2', 'z_gyro_2']

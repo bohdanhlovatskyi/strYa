@@ -1,3 +1,7 @@
+'''
+TODO: Tests for analyser, posture position and sensor group
+'''
+
 import unittest
 import sys
 

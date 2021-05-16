@@ -312,41 +312,11 @@ class PosturePosition:
                 continue
         raise ValueError('There is no available port to connect to')
 
-    @staticmethod
-    def _find_change(prev_orientation: Tuple[float],
-                     current: Tuple[float]) ->\
-                     Tuple[float, Tuple[float]]:
-        '''
-        Determines change between two orientation measurements.
-
-        Returns tuple with (percentage_of_change, (relative change vector values))
-
-        '''
-
-        pass
-
-    @staticmethod
-    def _detects_movement(prev_orientation: Tuple[float],\
-                          current: Tuple[float], precision: int = 10) -> bool:
-        '''
-        determines whether object moves between two measurements.
-
-        possible_usage: checks this for 10-15 measurement and
-        if the majority the function return values are True,
-        then the object is moving. This would be useful in determining
-        time of sitting srteadily and so on
-        '''
-
-        change, _ = self._find_change(prev_orientation, current)
-
-        if change > precision:
-            return True 
-
-        return False
-
 
     def set_optimal_position(self, optimal_position: Tuple[float]) -> None:
         self.optimal_position = optimal_position
+
+
     def process_data_from_file(self, from_file):
         to_file = 'angles_' + from_file
         file_to_write = open(to_file, 'w')
@@ -393,99 +363,3 @@ class PosturePosition:
             optimal_orientations.extend([str(i) for i in sensor_group.optimal_position])
         writer.writerow(['0', '0'] + optimal_orientations)
         file_to_write.close()
-
-
-class Analyzer:
-    def read_data(self, path):
-        #data frame from rounded data file
-        df = pd.read_csv(path)
-        rounded = np.round(df)
-
-        #find optimal and delete it from data frame
-        optimal = df.tail(1)
-        x1_optimal = optimal['x1'].tolist()[0]
-        y1_optimal = optimal['y1'].tolist()[0]
-        # # print(x_optimal, y_optimal)
-        #print(optimal)
-        x2_optimal = optimal['x2'].tolist()[0]
-        y2_optimal = optimal['y2'].tolist()[0]
-        df = df.head(-1)
-
-        #find all par for graphs
-        time = df['computer_time'].tolist()
-        start_time = time[0]
-        time = [i-start_time for i in time]
-        x1 = df['x1'].tolist()
-        x1 = [i+x1_optimal for i in x1]
-        y1 = df['y1'].tolist()
-        y1 = [i-y1_optimal for i in y1]
-        # z1 = df['z1'].tolist()
-
-        x2 = df['x2'].tolist()
-        x2 = [i+x2_optimal for i in x2]
-        y2 = df['y2'].tolist()
-        y2 = [i-y2_optimal for i in y2]
-        # z2 = df['z2'].tolist()
-        return x1, y1, x2, y2
-
-    @staticmethod
-    def steady(orient_1, orient_2):
-        for orientation in [orient_1, orient_2]:
-            for axis in orientation:
-                if abs(axis) > 5:
-                    return False
-        return True
-    @staticmethod
-    def forward_rotation(orient_1, orient_2):
-        y1 = orient_1[1]
-        y2 = orient_2[1]
-        if 30 < abs(y1) < 70 and 30 < abs(y2) < 70:
-            if abs(y1-y1) < 20:
-                return True
-        return False
-    @staticmethod
-    def forward_tilt(orient_1, orient_2):
-        y1 = orient_1[1]
-        y2 = orient_2[1]
-        if 10 < abs(y1) < 25 and abs(y2) < 7:
-            return True
-        #check sitting
-        if 10 < abs(y1) < 15 and 25 < abc(y2) < 30:
-            return True
-        return False
-
-    @staticmethod
-    def side_tilt(orient_1, orient_2):      
-        x1 = orient_1[0]
-        x2 = orient_2[0]
-        if 10 < abs(x1) < 30 or 10 < abs(x2) < 30:
-                return True
-        return False
-    
-
-    def check_mode(self, x1, y1, x2, y2):
-        orient_1 = (x1, y1)
-        orient_2 = (x2, y2)
-        if self.steady(orient_1, orient_2):
-            print('Steady.')
-        if self.forward_rotation(orient_1, orient_2):
-            print('Forward rotation.')
-        elif self.forward_tilt(orient_1, orient_2):
-            print('Forward tilt.')
-        elif self.side_tilt(orient_1, orient_2):
-            print('Side tilt')
-
-
-        
-
-    def check_data(self, path):
-        x1, y1, x2, y2 = self.read_data(path)
-        for i in range(len(x1)):
-            self.check_mode(x1[i], y1[i], x2[i], y2[i])
-
-
-if __name__ == '__main__':
-    analyze = Analyzer()
-    analyze.check_data('angles_sitting_2.csv')
-#     posture = PosturePosition()
-#     posture.process_data_from_file('steady.csv', 'angles_steady.csv')
