@@ -18,7 +18,9 @@ COLUMNS_NAMES = ['human_time', 'computer_time', 'x_acc_1', 'y_acc_1',\
 
 def main(from_file: str = None, to_file: str = None) -> None:
     '''
-    Script function. Allows to write the info info file in txt format
+    Script function.
+    
+    Allows to write the raw data file in csv format
     (containing row data that then would be useful for prototyping), 
     if the filename is specified.
 

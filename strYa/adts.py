@@ -7,14 +7,11 @@ could be used to analyse data written to a dataset.
 
 import numpy as np
 import math
-from numpy.lib.function_base import angle
 import serial
-from typing import Any, Dict, Tuple, List, Union
-from ahrs import Quaternion
+from typing import Any, Dict, Tuple, List
 from datetime import datetime
 from time import time
 import pandas as pd
-from scipy.spatial.transform import Rotation as R
 import csv
 
 from abc import ABCMeta, abstractmethod
