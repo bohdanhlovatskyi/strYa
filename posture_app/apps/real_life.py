@@ -25,7 +25,7 @@ layout = html.Div([
                 persistence=True, persistence_type='session',
                 options=[{'label': x, 'value': x} for x in sorted(dfg["Type"].unique())]
             )
-        ], className='six columns'),
+        ], className='six columns', style={'display': 'inline-block', 'width': '49%'}),
 
         html.Div([
             html.Pre(children="Country of destination", style={"fontSize": "150%"}),
@@ -34,7 +34,7 @@ layout = html.Div([
                 persistence=True, persistence_type='local',
                 options=[{'label': x, 'value': x} for x in sorted(dfg["Order Country"].unique())]
             )
-            ], className='six columns'),
+            ], className='six columns', style={'display': 'inline-block', 'width': '49%'}),
     ], className='row'),
 
     dcc.Graph(id='my-map', figure={}),

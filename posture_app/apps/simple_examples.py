@@ -46,16 +46,19 @@ layout = html.Div([
     ], className='row'),
 
     html.Div([
-        dcc.Graph(id='six_graphs', figure={}),
-        player.DashPlayer(
-                        id="video-display",
-                        url="https://youtu.be/YMWvOcn7Dms",
-                        controls=True,
-                        playing=False,
-                        volume=1,
-                        width="500px",
-                        height="500px",
-                    ),
+        html.Div(dcc.Graph(
+            id='six_graphs', 
+            figure={}
+        ), style={'display': 'inline-block', 'width': '49%'}),
+        html.Div(player.DashPlayer(
+            id="video-display",
+            url="https://youtu.be/YMWvOcn7Dms",
+            controls=True,
+            playing=False,
+            volume=1,
+            width="500px",
+            height="500px",
+        ), style={'display': 'inline-block', 'width': '49%'})
     ])
     
 ])
