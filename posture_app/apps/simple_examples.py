@@ -1,7 +1,6 @@
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-import plotly.express as px
 import pandas as pd
 import pathlib
 from app import app
@@ -13,30 +12,23 @@ import plotly.graph_objects as go
 import dash_player as player
 
 import numpy as np
-from numpy import pi, cos, sin, sqrt
-import math
 import time as t
 
-# get relative data folder
 PATH = pathlib.Path(__file__).parent
 DATA_PATH = PATH.joinpath("../datasets").resolve()
 
-# dfv = pd.read_csv(DATA_PATH.joinpath("vgsales.csv"))  # GregorySmith Kaggle
 modes_list = ["Steady", "Forward rotation", "Forward tilt", "Forward tilt and rotation", "Side tilt"]
-sales_list = ["North American Sales", "EU Sales", "Japan Sales", "Other Sales",	"World Sales"]
-# df_steady = pd.read_csv(DATA_PATH.joinpath("angles_steady.csv"))
-# df_forward_rotation = pd.read_csv(DATA_PATH.joinpath("angles_forward_rotation.csv"))
 
 modes_dict = {"Steady": "angles_steady.csv", "Forward rotation": "angles_forward_rotation.csv",
 "Forward tilt": "angles_forward_tilt.csv", "Forward tilt and rotation": "angles_forward_tilt_and_rotation.csv",
 "Side tilt": "angles_side_tilt.csv"}
 
-videos_dict = {"Steady": "https://youtu.be/hSPmj7mK6ng", "Forward rotation": "https://youtu.be/YMWvOcn7Dms",
-"Forward tilt": "", "Forward tilt and rotation": "",
-"Side tilt": ""}
+videos_dict = {"Steady": "https://youtu.be/dsJy6R1AejI", "Forward rotation": "https://youtu.be/VjDsmIdoKyk",
+"Forward tilt": "https://youtu.be/YzQ5LT6rhYw", "Forward tilt and rotation": "https://youtu.be/UZj-L4j23qw",
+"Side tilt": "https://youtu.be/9oCsNgZ29jU"}
 
 layout = html.Div([
-    html.H1('strYa', style={"textAlign": "center", "color": "purple"}),
+    html.H1('strYa', style={"textAlign": "center", "color": "#8A2BE2"}),
 
     html.Div([
         html.Div(dcc.Dropdown(
@@ -65,7 +57,6 @@ layout = html.Div([
 )
 def display_value(mode_chosen):
     df = pd.read_csv(DATA_PATH.joinpath(modes_dict[mode_chosen]))
-    print(df)
     rounded = np.round(df)
 
 
@@ -97,34 +88,28 @@ def display_value(mode_chosen):
     # Add traces
     fig.add_trace(go.Scatter(x=time, y=x1), row=1, col=1)
     fig.add_trace(go.Scatter(x=time, y=y1), row=2, col=1)
-    # fig.add_trace(go.Scatter(x=time, y=z1), row=3, col=1)
+
     fig.add_trace(go.Scatter(x=time, y=x2), row=1, col=2)
     fig.add_trace(go.Scatter(x=time, y=y2), row=2, col=2)
-    # fig.add_trace(go.Scatter(x=time, y=z2), row=3, col=2)
+
 
     # Update xaxis properties
     fig.update_xaxes(title_text="time", row=1, col=1)
     fig.update_xaxes(title_text="time", row=2, col=1)
-    # fig.update_xaxes(title_text="time", row=3, col=1)
+
     fig.update_xaxes(title_text="time", row=1, col=2)
     fig.update_xaxes(title_text="time", row=2, col=2)
-    # fig.update_xaxes(title_text="time", row=3, col=2)
+
     # # Update yaxis properties
     fig.update_yaxes(title_text="x1", row=1, col=1, range=[-90, 90])
     fig.update_yaxes(title_text="y1", row=2, col=1, range=[-90, 90])
-    # fig.update_yaxes(title_text="z1", row=3, col=1)
+
     fig.update_yaxes(title_text="x2", row=1, col=2, range=[-90, 90])
     fig.update_yaxes(title_text="y2", row=2, col=2, range=[-90, 90])
-    # fig.update_yaxes(title_text="z2", row=3, col=2)
+
 
     # Update title and height
     fig.update_layout(title_text="Posture position", height=500, width=600)
-    # video = src=DATA_PATH.joinpath(videos_dict[mode_chosen])
-
-    # output_video = html.Video(id='video',children=[],
-    #             controls = True,
-    #             src = 'forward_rotation.mp4',
-    #             autoPlay = True)
 
     video = player.DashPlayer(
             id="video-display",
@@ -132,6 +117,6 @@ def display_value(mode_chosen):
             controls=True,
             playing=False,
             volume=1,
-            width="500px",
-            height="500px",)
+            width="600px",
+            height="450px",)
     return fig, video

@@ -1,57 +1,46 @@
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
-import plotly.express as px
 import pandas as pd
 import pathlib
 from app import app
 
-# get relative data folder
-PATH = pathlib.Path(__file__).parent
-DATA_PATH = PATH.joinpath("../datasets").resolve()
+import plotly as py
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 
-# owner: shivp Kaggle. Source: https://data.mendeley.com/datasets
-# dataset was modified. Original data: https://www.kaggle.com/shivkp/customer-behaviour
-dfg = pd.read_csv(DATA_PATH.joinpath("opsales.csv"))
+import dash_player as player
+
+import numpy as np
+import time as t
+
+labels = ['steady','forward_tilt','side_tilt','forward_rotation']
+values = [390, 161, 97, 52]
+
+# pull is given as a fraction of the pie radius
+fig = go.Figure(data=[go.Pie(labels=labels, values=values, pull=[0.2, 0, 0, 0])])
+
+video = player.DashPlayer(
+    id="main_video.mp4",
+    url='https://youtu.be/XFHD3lotkfY',
+    controls=True,
+    playing=False,
+    volume=1,
+    width="650px",
+    height="500px",)
+
 
 layout = html.Div([
-    html.H1('General Product Sales', style={"textAlign": "center"}),
+    html.H1('strYa', style={"textAlign": "center", "color": "#8A2BE2"}),
 
     html.Div([
-        html.Div([
-            html.Pre(children="Payment type", style={"fontSize":"150%"}),
-            dcc.Dropdown(
-                id='pymnt-dropdown', value='DEBIT', clearable=False,
-                persistence=True, persistence_type='session',
-                options=[{'label': x, 'value': x} for x in sorted(dfg["Type"].unique())]
-            )
-        ], className='six columns', style={'display': 'inline-block', 'width': '49%'}),
-
-        html.Div([
-            html.Pre(children="Country of destination", style={"fontSize": "150%"}),
-            dcc.Dropdown(
-                id='country-dropdown', value='India', clearable=False,
-                persistence=True, persistence_type='local',
-                options=[{'label': x, 'value': x} for x in sorted(dfg["Order Country"].unique())]
-            )
-            ], className='six columns', style={'display': 'inline-block', 'width': '49%'}),
-    ], className='row'),
-
-    dcc.Graph(id='my-map', figure={}),
+        html.Div(dcc.Graph(
+            id='graphs_timeline', 
+            figure=fig
+        ), style={'display': 'inline-block', 'width': '49%'}),
+        html.Div(id='video',
+            children=video, 
+            style={'display': 'inline-block', 'width': '49%'})
+    ])
+    
 ])
-
-
-@app.callback(
-    Output(component_id='my-map', component_property='figure'),
-    [Input(component_id='pymnt-dropdown', component_property='value'),
-     Input(component_id='country-dropdown', component_property='value')]
-)
-def display_value(pymnt_chosen, country_chosen):
-    dfg_fltrd = dfg[(dfg['Order Country'] == country_chosen) &
-                    (dfg["Type"] == pymnt_chosen)]
-    dfg_fltrd = dfg_fltrd.groupby(["Customer State"])[['Sales']].sum()
-    dfg_fltrd.reset_index(inplace=True)
-    fig = px.choropleth(dfg_fltrd, locations="Customer State",
-                        locationmode="USA-states", color="Sales",
-                        scope="usa")
-    return fig
