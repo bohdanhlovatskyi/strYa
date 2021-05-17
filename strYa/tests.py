@@ -4,8 +4,6 @@ TODO: Tests for analyser, posture position and sensor group
 
 import unittest
 import sys
-
-from ahrs.common.quaternion import Quaternion
 sys.path.append('..')
 import adts
 
