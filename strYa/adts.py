@@ -415,3 +415,6 @@ of given sensor groups to read into')
             optimal_orientations.extend([str(i) for i in sensor_group.optimal_position])
         writer.writerow(['0', '0'] + optimal_orientations)
         file_to_write.close()
+
+posture = PosturePosition()
+posture.process_data_from_file('main_two.csv')
