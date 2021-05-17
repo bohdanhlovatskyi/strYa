@@ -96,15 +96,15 @@ def main(from_file: str = None, to_file: str = None) -> None:
                 # port in which we will write in case if the posture is bad
                 # for test func: displays info about separate sensors groups
                 # sensor_group.check_current_posture(port=port)
-                current_angles.append(sensor_group.orientation.to_euler()[:-1])
-
+                # current_angles.append(sensor_group.orientation.to_euler()[:-1])
+                current_angles.append(sensor_group.normalised_angles())
         if not current_angles: continue
-        analyser.check_mode(*current_angles)
+        analyser.check_mode(*current_angles, port=port)
 
 if __name__ == '__main__':
-    filename = 'datasets/row_data/forward_rotations.csv'
-    # filename = None
+    # filename = 'datasets/row_data/forward_tilt_and_rotation.csv'
+    filename = None
     # to_file = 'test.csv'
-    to_file = None
+    to_file = 'GODSPRESENTTOPEOPLE2.csv'
     while main(from_file=filename, to_file=to_file) == -1:
         main(from_file=filename)

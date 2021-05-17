@@ -167,7 +167,7 @@ def main(path=None):
                 break
             if event.type == KEYDOWN and event.key == K_z:
                 yaw_mode = not yaw_mode
-            
+
             pygame.display.flip()
             frames = frames + 1
 
@@ -185,5 +185,5 @@ def main(path=None):
 # 'datasets\\forward_movements\\angles_forward_rotation_with_tilt.csv'
 # 'datasets\steady\\angles_steady.csv'
 if __name__ == '__main__':
-    path = 'datasets/angles/angles_forward_rotations.csv'
+    path = 'GODSPRESENTTOPEOPLE.csv'
     main(path)

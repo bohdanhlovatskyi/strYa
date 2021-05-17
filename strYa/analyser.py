@@ -7,6 +7,7 @@ current posture position.
 
 import pandas as pd
 import numpy as np
+import serial
 from collections import defaultdict
 from typing import List
 
@@ -119,7 +120,7 @@ class Analyzer:
         return False
     
 
-    def check_mode(self, *args) -> None:
+    def check_mode(self, *args, port: serial.Serial = None) -> None:
         '''
         Main funciton of class. Checks current posture represented in angles for
         each type of analyser-function and print out the trend on the screen.
@@ -129,14 +130,19 @@ class Analyzer:
         self.info_on_user['num_of_iterations'] += 1
         funcs = [self.steady, self.forward_rotation,  self.forward_tilt, self.side_tilt]
 
-        for func in funcs:
+        for idx, func in enumerate(funcs):
             if not func(upper_sensor_group, lower_sensor_group):
                 continue
 
+            if port and idx >= 2:
+                port.write(bytearray(b'1'))
+
             self.info_on_user[func.__name__] += 1
-            print(f"On {self.info_on_user['num_of_iterations']} iteration, the trend in position is {func.__name__}")
+            
+            print(f"{self.info_on_user['num_of_iterations']} iteration: {func.__name__}")
             return
-        print(f"On {self.info_on_user['num_of_iterations']} iteration, the posture seems OK")
+
+        print(f"{self.info_on_user['num_of_iterations']} iteration: the trend is not clear")
 
 
     def check_data(self, path):

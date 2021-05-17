@@ -7,6 +7,7 @@ could be used to analyse data written to a dataset.
 
 import numpy as np
 import math
+from numpy.lib.function_base import angle
 import serial
 from typing import Any, Dict, Tuple, List, Union
 from ahrs import Quaternion
@@ -175,6 +176,7 @@ class QuaternionContainer:
 
         return X, Y, Z
 
+
 class SensorGroup:
     '''
     Sensor group container. Contains sensors info
@@ -191,6 +193,12 @@ class SensorGroup:
         self.buffer: Buffer = Buffer()
         self.filter = Mahony(frequency=5)
         self.num_of_bad_posture_measurements: int = 0
+
+    def normalised_angles(self) -> List[float]:
+        angles = self.orientation.to_euler()
+        optimal = self.optimal_position
+        # print(angles, optimal)
+        return [angles[0] - optimal[0], angles[1] - optimal[1]]
 
     def count_orientation(self, only_count: bool = False) -> None:
 
