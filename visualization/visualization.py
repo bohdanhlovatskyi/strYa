@@ -28,35 +28,35 @@ def init():
     glDepthFunc(GL_LEQUAL)
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 
-#Funtion to display in GUI 
-def drawtext(position, textstring):
-    font = pygame.font.SysFont("Courier", 18, True)
-    textsurface = font.render(textstring, True, (255, 255, 255, 255), (0, 0, 0, 255))
-    textData = pygame.image.tostring(textsurface, "RGBA", True)
-    glRasterPos3d(*position)
-    glDrawPixels(textsurface.get_width(), textsurface.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, textData)
+# #Funtion to display in GUI 
+# def drawtext(position, textstring):
+#     font = pygame.font.SysFont("Courier", 18, True)
+#     textsurface = font.render(textstring, True, (255, 255, 255, 255), (0, 0, 0, 255))
+#     textData = pygame.image.tostring(textsurface, "RGBA", True)
+#     glRasterPos3d(*position)
+#     glDrawPixels(textsurface.get_width(), textsurface.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, textData)
 
 #Function to display the block  
-def draw(ax, ay, az):
+def draw(ax, ay, az, screen, i):
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     glLoadIdentity()
     glTranslatef(0, 0.0, -7.0)
 
-    osd_text = "pitch: " + str("{0:.2f}".format(ay)) + ", roll: " + str("{0:.2f}".format(ax))
+    # osd_text = "pitch: " + str("{0:.2f}".format(ay)) + ", roll: " + str("{0:.2f}".format(ax))
 
-    if yaw_mode:
-        osd_line = osd_text + ", yaw: " + str("{0:.2f}".format(az))
-    else:
-        osd_line = osd_text
+    # if yaw_mode:
+    #     osd_line = osd_text + ", yaw: " + str("{0:.2f}".format(az))
+    # else:
+    #     osd_line = osd_text
 
-    drawtext((-2, -2, 2), osd_line)
+    # drawtext((-2, -2, 2), osd_line)
 
     # the way I'm holding the IMU board, X and Y axis are switched,with respect to the OpenGL coordinate system
     
-    if yaw_mode:  
-        az=az+180  #Comment out if reading Euler Angle/Quaternion angles 
-        glRotatef(az, 0.0, 1.0, 0.0)      # Yaw, rotate around y-axis
+    # if yaw_mode:  
+    #     az=az+180  #Comment out if reading Euler Angle/Quaternion angles 
+    #     glRotatef(az, 0.0, 1.0, 0.0)      # Yaw, rotate around y-axis
 
  
     glRotatef(ay, 1.0, 0.0, 0.0)          # Pitch, rotate around x-axis
@@ -174,14 +174,14 @@ def main(path=None):
             # x, y, z = Quaternion_to_Euler(Q)
             #print(x, y, z)
             x, y = x1[i], y1[i]
-            print(x, y, 0)
-            draw(x, y, 0)
+            draw(x, y, 0, screen, i)
             time.sleep(0.1)
-    else:
-        while True:
+    # else:
+    #     while True:
             
 # 'datasets\\forward_movements\\angles_forward_rotation_with_tilt.csv'
 # 'datasets\steady\\angles_steady.csv'
 if __name__ == '__main__':
-    path = 'old_new\\forward_rotations_new.csv'
+    path = 'visualization\\angles_forward_rotation.csv'
     main(path)
+ 
