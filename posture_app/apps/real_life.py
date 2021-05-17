@@ -22,7 +22,7 @@ fig = go.Figure(data=[go.Pie(labels=labels, values=values, pull=[0.2, 0, 0, 0])]
 
 video = player.DashPlayer(
     id="main_video.mp4",
-    url='https://youtu.be/XFHD3lotkfY',
+    url='https://youtu.be/k6cO7OQNGAA',
     controls=True,
     playing=False,
     volume=1,
