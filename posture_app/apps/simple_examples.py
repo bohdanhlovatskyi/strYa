@@ -31,9 +31,9 @@ modes_dict = {"Steady": "angles_steady.csv", "Forward rotation": "angles_forward
 "Forward tilt": "angles_forward_tilt.csv", "Forward tilt and rotation": "angles_forward_tilt_and_rotation.csv",
 "Side tilt": "angles_side_tilt.csv"}
 
-videos_dict = {"Steady": "forward_rotation.mp4", "Forward rotation": "angles_forward_rotation.csv",
-"Forward tilt": "angles_forward_tilt.csv", "Forward tilt and rotation": "angles_forward_tilt_and_rotation.csv",
-"Side tilt": "angles_side_tilt.csv"}
+videos_dict = {"Steady": "https://youtu.be/hSPmj7mK6ng", "Forward rotation": "https://youtu.be/YMWvOcn7Dms",
+"Forward tilt": "", "Forward tilt and rotation": "",
+"Side tilt": ""}
 
 layout = html.Div([
     html.H1('strYa', style={"textAlign": "center", "color": "purple"}),
@@ -50,22 +50,17 @@ layout = html.Div([
             id='six_graphs', 
             figure={}
         ), style={'display': 'inline-block', 'width': '49%'}),
-        html.Div(player.DashPlayer(
-            id="video-display",
-            url="https://youtu.be/YMWvOcn7Dms",
-            controls=True,
-            playing=False,
-            volume=1,
-            width="500px",
-            height="500px",
-        ), style={'display': 'inline-block', 'width': '49%'})
+        html.Div(id='video_field',
+            children={}, 
+            style={'display': 'inline-block', 'width': '49%'})
     ])
     
 ])
 
 
 @app.callback(
-    Output(component_id='six_graphs', component_property='figure'),
+    [Output(component_id='six_graphs', component_property='figure'),
+    Output(component_id='video_field', component_property='children')],
     Input(component_id='posture_mode', component_property='value')
 )
 def display_value(mode_chosen):
@@ -130,4 +125,13 @@ def display_value(mode_chosen):
     #             controls = True,
     #             src = 'forward_rotation.mp4',
     #             autoPlay = True)
-    return fig
+
+    video = player.DashPlayer(
+            id="video-display",
+            url=videos_dict[mode_chosen],
+            controls=True,
+            playing=False,
+            volume=1,
+            width="500px",
+            height="500px",)
+    return fig, video
