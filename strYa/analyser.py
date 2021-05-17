@@ -17,17 +17,29 @@ and on each iteration they are changed and then via dicts can be created nice lo
 
 import pandas as pd
 import numpy as np
-
+from collections import defaultdict
 
 class Analyzer:
+    '''
+    Analyser class. Should be created once in order to keep track of the user
+    posture description. Should be related to other classes as an agregator class
+    '''
+
+    def __init__(self) -> None:
+        '''
+        Contains attributes that would be used as verboses
+        '''
+
+        self.info_on_user: defaultdict = defaultdict(int)
         
-    def read_data(self, path):
+    def __read_data(self, path):
         #data frame from rounded data file
         df = pd.read_csv(path)
         rounded = np.round(df)
 
         #find optimal and delete it from data frame
         optimal = df.tail(1)
+        print(optimal)
         x1_optimal = optimal['x1'].tolist()[0]
         y1_optimal = optimal['y1'].tolist()[0]
         # # print(x_optimal, y_optimal)
@@ -60,6 +72,7 @@ class Analyzer:
                 if abs(axis) > 5:
                     return False
         return True
+
     @staticmethod
     def forward_rotation(orient_1, orient_2):
         y1 = orient_1[1]
@@ -68,6 +81,7 @@ class Analyzer:
             if abs(y1-y1) < 20:
                 return True
         return False
+
     @staticmethod
     def forward_tilt(orient_1, orient_2):
         y1 = orient_1[1]
@@ -75,7 +89,7 @@ class Analyzer:
         if 10 < abs(y1) < 25 and abs(y2) < 7:
             return True
         #check sitting
-        if 10 < abs(y1) < 15 and 25 < abc(y2) < 30:
+        if 10 < abs(y1) < 15 and 25 < abs(y2) < 30:
             return True
         return False
 
@@ -88,25 +102,35 @@ class Analyzer:
         return False
     
 
-    def check_mode(self, x1, y1, x2, y2):
-        orient_1 = (x1, y1)
-        orient_2 = (x2, y2)
-        if self.steady(orient_1, orient_2):
-            print('Steady.')
-        if self.forward_rotation(orient_1, orient_2):
-            print('Forward rotation.')
-        elif self.forward_tilt(orient_1, orient_2):
-            print('Forward tilt.')
-        elif self.side_tilt(orient_1, orient_2):
-            print('Side tilt')
-        
+    def check_mode(self, *args) -> None:
+        '''
+        Main funciton of class. Checks current posture represented in angles for
+        each type of analyser-function and print out the trend on the screen.
+        '''
+
+        upper_sensor_group, lower_sensor_group = args
+        self.info_on_user['num_of_iterations'] += 1
+        funcs = [self.steady, self.forward_rotation,  self.forward_tilt, self.side_tilt]
+
+        for func in funcs:
+            if not func(upper_sensor_group, lower_sensor_group):
+                continue
+
+            self.info_on_user[func.__name__] += 1
+            print(f"On {self.info_on_user['num_of_iterations']} iteration, the trend in position is {func.__name__}")
+            break
+
 
     def check_data(self, path):
-        x1, y1, x2, y2 = self.read_data(path)
+        '''
+        Function to check data from file
+        '''
+
+        x1, y1, x2, y2 = self.__read_data(path)
         for i in range(len(x1)):
-            self.check_mode(x1[i], y1[i], x2[i], y2[i])
+            self.check_mode((x1[i], y1[i]), (x2[i], y2[i]))
 
 
 if __name__ == '__main__':
     analyze = Analyzer()
-    analyze.check_data('angles_sitting_2.csv')
+    analyze.check_data('datasets/angles/angles_side_tilt.csv')

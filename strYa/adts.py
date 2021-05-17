@@ -238,6 +238,15 @@ Horisontal: {posture_to_str[horisontal_posture]}; {datetime.now()}')
             port.write(bytearray(b'1'))
             self.num_of_bad_posture_measurements += 1
 
+    
+    def has_optimal_position(self) -> bool:
+        '''
+        Bool function that is convenient to check
+        whether optimal posistion is counte 
+        '''
+
+        return bool(self.optimal_position)
+
 
     def __str__(self) -> str:
         return f'{str(self.acc)} | {str(self.gyro)})'

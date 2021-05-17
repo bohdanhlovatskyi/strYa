@@ -6,6 +6,7 @@ should work with analyser class
 '''
 import csv
 from time import time, sleep
+from typing import List, Tuple
 from strYa.adts import SensorGroup, Accelerometer,\
                         Gyro, Buffer, QuaternionContainer,\
                         PosturePosition
@@ -32,6 +33,7 @@ def main(from_file: str = None, to_file: str = None) -> None:
     # creates an instance of posture position class, which
     # allocates memory for 4 sensors (combined in two sensor groups)
     posture = PosturePosition()
+    analyser = Analyzer()
 
     if from_file:
         file = open(from_file)
@@ -72,6 +74,7 @@ def main(from_file: str = None, to_file: str = None) -> None:
                 line = from_file_data[iteration].rstrip()
                 if not line: continue
             except IndexError:
+                print(analyser.info_on_user)
                 break
             data = posture.preprocess_data_from_file(line, sep=',')
 
@@ -81,6 +84,7 @@ def main(from_file: str = None, to_file: str = None) -> None:
             print('. . .')
             continue
 
+        current_angles: List[Tuple[float]] = []
         for sensor_group in posture.sensor_groups:
             # skips some iteration so to the sensors could stabilise
             if iteration < 100:
@@ -88,22 +92,18 @@ def main(from_file: str = None, to_file: str = None) -> None:
             else:
                 sensor_group.count_orientation()
 
-            # while optimal position is not calculated it would throw
-            # TypeError. Be careful with that, might hide some other
-            # error
-            # TODO: write separate exception class for it
-            try:
+            if sensor_group.has_optimal_position():
                 # port in which we will write in case if the posture is bad
                 sensor_group.check_current_posture(port=port)
-            except TypeError: # while optimal position is not
-                # calculated typeerror will be raised by check current pos func
-                continue
+                current_angles.append(sensor_group.orientation.to_euler()[:-1])
 
+        if not current_angles: continue
+        analyser.check_mode(*current_angles)
 
 if __name__ == '__main__':
-    # filename = 'datasets/forward/forward_rotations.csv'
-    filename = None
-    to_file = 'test.csv'
-    # to_file = None
+    filename = 'datasets/row_data/forward_tilt_and_rotation.csv'
+    # filename = None
+    # to_file = 'test.csv'
+    to_file = None
     while main(from_file=filename, to_file=to_file) == -1:
         main(from_file=filename)
