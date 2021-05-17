@@ -4,8 +4,9 @@ TODO: Tests for analyser, posture position and sensor group
 
 import unittest
 import sys
-sys.path.append('..')
-import adts
+# sys.path.append("..") # Adds higher directory to python modules path.
+
+from .. import adts
 
 class TestBuffer(unittest.TestCase):
 

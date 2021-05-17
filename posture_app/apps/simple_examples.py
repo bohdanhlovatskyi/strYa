@@ -14,8 +14,9 @@ import dash_player as player
 import numpy as np
 import time as t
 
-PATH = pathlib.Path(__file__).parent
-DATA_PATH = PATH.joinpath("../datasets").resolve()
+PATH = pathlib.Path(__file__).parent.parent
+print(PATH)
+DATA_PATH = PATH.joinpath("../datasets/angles").resolve()
 
 modes_list = ["Steady", "Forward rotation", "Forward tilt", "Forward tilt and rotation", "Side tilt"]
 
