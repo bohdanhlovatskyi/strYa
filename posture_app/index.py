@@ -17,7 +17,7 @@ app.layout = html.Div([
         dcc.Link('Real life', href='/apps/real_life'),
     ], className="row"),
     html.Div(id='page-content', children=[])
-], style={"background": '#FFEBCD'})
+], style={"background": 'white'})
 
 
 @app.callback(Output('page-content', 'children'),
@@ -28,7 +28,7 @@ def display_page(pathname):
     if pathname == '/apps/real_life':
         return real_life.layout
     else:
-        return "404 Page Error! Please choose a link"
+        return simple_examples.layout
 
 
 if __name__ == '__main__':
