@@ -1,0 +1,1 @@
+web: python3 posture_app/index.py runserver 0.0.0.0:5000
