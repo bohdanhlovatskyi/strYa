@@ -135,8 +135,9 @@ class Analyzer:
 
             self.info_on_user[func.__name__] += 1
             print(f"On {self.info_on_user['num_of_iterations']} iteration, the trend in position is {func.__name__}")
-            return f"On {self.info_on_user['num_of_iterations']} iteration, the trend in position is {func.__name__}"
+            return f"{self.info_on_user['num_of_iterations']} iteration: {func.__name__}"
         # print(f"On {self.info_on_user['num_of_iterations']} iteration, the posture seems OK")
+        return f"{self.info_on_user['num_of_iterations']} iteration: the trend is not clear"
 
 
     def check_data(self, path):

@@ -29,16 +29,16 @@ def init():
     glDepthFunc(GL_LEQUAL)
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST)
 
-# #Funtion to display in GUI 
-# def drawtext(position, textstring):
-#     font = pygame.font.SysFont("Courier", 18, True)
-#     textsurface = font.render(textstring, True, (255, 255, 255, 255), (0, 0, 0, 255))
-#     textData = pygame.image.tostring(textsurface, "RGBA", True)
-#     glRasterPos3d(*position)
-#     glDrawPixels(textsurface.get_width(), textsurface.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, textData)
+#Funtion to display in GUI 
+def drawtext(position, textstring):
+    font = pygame.font.SysFont("Courier", 18, True)
+    textsurface = font.render(textstring, True, (255, 255, 255, 255), (0, 0, 0, 255))
+    textData = pygame.image.tostring(textsurface, "RGBA", True)
+    glRasterPos3d(*position)
+    glDrawPixels(textsurface.get_width(), textsurface.get_height(), GL_RGBA, GL_UNSIGNED_BYTE, textData)
 
 #Function to display the block  
-def draw(ax, ay, az, screen, i):
+def draw(ax, ay, az, screen, i, str_condition):
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
     glLoadIdentity()
@@ -51,7 +51,7 @@ def draw(ax, ay, az, screen, i):
     # else:
     #     osd_line = osd_text
 
-    # drawtext((-2, -2, 2), osd_line)
+    drawtext((-2.7, -1.5, 2), str_condition)
 
     # the way I'm holding the IMU board, X and Y axis are switched,with respect to the OpenGL coordinate system
     
@@ -176,8 +176,8 @@ def main(path=None):
             # x, y, z = Quaternion_to_Euler(Q)
             #print(x, y, z)
             x, y = x1[i], y1[i]
-            draw(x, y, 0, screen, i)
             str_condition = analyser.check_mode((x, y), (x2[i], y2[i]))
+            draw(x, y, 0, screen, i, str_condition)
             time.sleep(0.1)
     # else:
     #     while True:
