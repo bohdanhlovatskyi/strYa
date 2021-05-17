@@ -34,24 +34,21 @@ def main(from_file: str = None, to_file: str = None) -> None:
     posture = PosturePosition()
 
     if from_file:
-        with open(from_file) as infile:
-            # drops the header from csv.
-            # not the best realisation, but seems handy in imitating receiving data
-            # from port
-            from_file_data = infile.readlines()[1:]
+        file = open(from_file)
+        from_file_data = file.readlines()[1:]
+        from_file_data = [line for line in from_file_data if line]
         port = None # so not to write separate handler of it later on
     else:
         port = posture.establish_connection()
 
     if to_file:
         # TODO: The keyboard interupt should handle its closing
-        txt_file = open(to_file, 'w')
-        # writer = csv.writer(file_csv)
-        # writer.writerow(COLUMNS_NAMES)
-        txt_file.write(', '.join(COLUMNS_NAMES))
+        file = open(to_file, 'w')
+        writer = csv.writer(file)
+        writer.writerow(COLUMNS_NAMES)
     else:
         # so not to write separate handler of it later on
-        txt_file = None
+        writer = None
 
     iteration: int = 0  
     while True:
@@ -70,14 +67,15 @@ def main(from_file: str = None, to_file: str = None) -> None:
             line = port.readline()
             data = posture.preprocess_data(line)
         else:
-            sleep(0.2) # because there are 200ms delays in data receiving from port
+            sleep(0.1) # because there are 200ms delays in data receiving from port
             try:
-                line = from_file_data[iteration]
+                line = from_file_data[iteration].rstrip()
+                if not line: continue
             except IndexError:
                 break
-            data = posture.preprocess_data_from_file(line)
+            data = posture.preprocess_data_from_file(line, sep=',')
 
-        posture.set_sensor_data(data, txt_file)
+        posture.set_sensor_data(data, writer)
         if not posture.lower_sensor_group.gyro.settings:
             # waits for bias that will be then applied to each element
             print('. . .')
@@ -103,8 +101,9 @@ def main(from_file: str = None, to_file: str = None) -> None:
 
 
 if __name__ == '__main__':
-    filename = 'other/datasets/falling/falling.txt'
+    # filename = 'datasets/forward/forward_rotations.csv'
     filename = None
-    to_file = 'test.txt'
-    while main(from_file=filename, to_file='test.txt') == -1:
+    to_file = 'test.csv'
+    # to_file = None
+    while main(from_file=filename, to_file=to_file) == -1:
         main(from_file=filename)

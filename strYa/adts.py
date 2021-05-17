@@ -8,7 +8,7 @@ could be used to analyse data written to a dataset.
 import numpy as np
 import math
 import serial
-from typing import Dict, Tuple, List, Union
+from typing import Any, Dict, Tuple, List, Union
 from ahrs import Quaternion
 from datetime import datetime
 from time import time
@@ -193,10 +193,6 @@ class SensorGroup:
         self.num_of_bad_posture_measurements: int = 0
 
     def count_orientation(self, only_count: bool = False) -> None:
-        if self.name == 'lower one':
-            # print(f'{self.name}: {self.orientation}') - there is some prroblem, no idea what exactly
-            # print(self.acc, self.gyro) -> this works fine to me
-            pass
 
         self.orientation = QuaternionContainer(self.filter.updateIMU(self.orientation.as_numpy_array(),
                                                                      self.gyro.current_value_np,
@@ -262,32 +258,31 @@ class PosturePosition:
         self.num_of_groups: int = 2
 
     
-    def set_sensor_data(self, data: List[List[List[float]]], file_obj=None) -> None:
+    def set_sensor_data(self, data: List[List[List[float]]], writer=None) -> None:
         '''
         Receives a list of data with measurements: [[[acc], [gyro]], [[acc], [gyro]]]
         Sets it into allocated memory for it (created instance of class so to make
         it go to its calibratio buffer etc.)
         '''
 
-        outstr: str = ''
+        outstr_info: List[Any] = [datetime.now()]+[time()]
         for line, sensor_group in zip(data, self.sensor_groups):
             acc, gyro = line
-            outstr += ', '.join([str(elm) for elm in [*acc, *gyro]]) + ', '
+            outstr_info = outstr_info + acc + gyro
             sensor_group.gyro.set_values(gyro)
             sensor_group.acc.set_values(acc)
 
-        if file_obj:
-            outstr = str(datetime.now()) + ', ' + str(time()) + ', ' + \
-                    outstr.rstrip(', ') + '\n'
-            file_obj.write(outstr)
+        if writer:
+            writer.writerow(outstr_info)
 
-    def preprocess_data_from_file(self, line: str) -> List[List[List[float]]]:
+
+    def preprocess_data_from_file(self, line: str, sep: str =',') -> List[List[List[float]]]:
         '''
         Preprocesses data from csv file, in ordet ro return it 
         in such outlook: [[[acc], [gyro]], [[acc], [gyro]]]
         '''
 
-        line = line.split(', ')[2:] # ommits the human and machine time
+        line = line.split(sep)[2:] # ommits the human and machine time
         line = [float(elm) for elm in line]
         outlst = []
         for sensor_group in (line[:6], line[6:]):
