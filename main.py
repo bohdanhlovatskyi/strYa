@@ -69,7 +69,7 @@ def main(from_file: str = None, to_file: str = None) -> None:
             line = port.readline()
             data = posture.preprocess_data(line)
         else:
-            sleep(0.1) # because there are 200ms delays in data receiving from port
+            sleep(0.05) # because there are 200ms delays in data receiving from port
             try:
                 line = from_file_data[iteration].rstrip()
                 if not line: continue
@@ -102,7 +102,7 @@ def main(from_file: str = None, to_file: str = None) -> None:
         analyser.check_mode(*current_angles)
 
 if __name__ == '__main__':
-    filename = 'datasets/row_data/side_tilt.csv'
+    filename = 'datasets/row_data/forward_rotations.csv'
     # filename = None
     # to_file = 'test.csv'
     to_file = None

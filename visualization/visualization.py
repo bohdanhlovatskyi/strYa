@@ -1,3 +1,4 @@
+from analyser import Analyzer
 from OpenGL.GL import *
 from OpenGL.GLU import *
 import pygame
@@ -145,10 +146,11 @@ def read_data(path):
     x2 = [i+x2_optimal for i in x2]
     y2 = df['y2'].tolist()
     y2 = [i-y2_optimal for i in y2]
-    return x1, y1
+    return x1, y1, x2, y2
 
 # def main(port, Q):
 def main(path=None):
+    analyser = Analyzer()
     video_flags = OPENGL | DOUBLEBUF
     pygame.init()
     screen = pygame.display.set_mode((640, 480), video_flags)
@@ -158,7 +160,7 @@ def main(path=None):
     frames = 0
     ticks = pygame.time.get_ticks()
     if path:
-        x1, y1 = read_data(path)
+        x1, y1, x2, y2 = read_data(path)
         for i in range(len(x1)):
             event = pygame.event.poll()
             if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
@@ -175,6 +177,7 @@ def main(path=None):
             #print(x, y, z)
             x, y = x1[i], y1[i]
             draw(x, y, 0, screen, i)
+            analyser.check_mode((x, y), (x2[i], y2[i]))
             time.sleep(0.1)
     # else:
     #     while True:
@@ -182,6 +185,5 @@ def main(path=None):
 # 'datasets\\forward_movements\\angles_forward_rotation_with_tilt.csv'
 # 'datasets\steady\\angles_steady.csv'
 if __name__ == '__main__':
-    path = 'visualization\\angles_forward_rotation.csv'
+    path = 'datasets/angles/angles_forward_rotations.csv'
     main(path)
- 
