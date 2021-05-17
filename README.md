@@ -9,6 +9,8 @@
  - [Team](#team)
  - [License and Copyright](license-and-copyright)
 
+## Usage example (Real data button in upper lower corner of screen) https://str-ya.herokuapp.com/apps/real_life
+
 ## Description
 **strYa** is a project aimed at helping one to track the quality of his posture. Using two Inertial Measurement Units (IMUs), the system can determine the quality of user's posture. After the system is setup, one may run an visualisation of one of the sensor, based on written dataset (one can pass to_file argument to main), as well as look at the statistics and graphs of the measurements from the files via simple web application written using python dash module
 
