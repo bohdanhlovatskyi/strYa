@@ -1,0 +1,278 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Welcome to strYa’s documentation! &#8212; strYa 1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="welcome-to-strya-s-documentation">
+<h1>Welcome to strYa’s documentation!<a class="headerlink" href="#welcome-to-strya-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="module-adts">
+<span id="adts"></span><h1>adts<a class="headerlink" href="#module-adts" title="Permalink to this headline">¶</a></h1>
+<p>Contains containers for sensor’s data. Classes to
+represent rotations and determine one’s position.
+Should be run in a simulation, or in case one wants to test the system
+could be used to analyse data written to a dataset.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="adts.Accelerometer">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">adts.</span></span><span class="sig-name descname"><span class="pre">Accelerometer</span></span><a class="headerlink" href="#adts.Accelerometer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accelerometer container class</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="adts.Gyro">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">adts.</span></span><span class="sig-name descname"><span class="pre">Gyro</span></span><a class="headerlink" href="#adts.Gyro" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="adts.Gyro.process_values">
+<span class="sig-name descname"><span class="pre">process_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><a class="headerlink" href="#adts.Gyro.process_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Processes value due to the gyro setings.
+If there is no such, raises ValueError</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="adts.Gyro.set_values">
+<span class="sig-name descname"><span class="pre">set_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">None</span><a class="headerlink" href="#adts.Gyro.set_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assignes value to this gyro. Values go into buffer
+in order to have the bias counted</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="adts.Sensor">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">adts.</span></span><span class="sig-name descname"><span class="pre">Sensor</span></span><a class="headerlink" href="#adts.Sensor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract base class for a sensor values.
+Contains information, as well as setting of calibration
+that will allow to process its values in certain moment
+of time</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="adts.SensorGroup">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">adts.</span></span><span class="sig-name descname"><span class="pre">SensorGroup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'sensor_group'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#adts.SensorGroup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sensor group container. Contains sensors info
+that will be processed in some class that will represent
+rotation and relative position</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="adts.SensorGroup.has_optimal_position">
+<span class="sig-name descname"><span class="pre">has_optimal_position</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#adts.SensorGroup.has_optimal_position" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bool function that is convenient to check
+whether optimal posistion is counte</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-analyser">
+<span id="analyser"></span><h1>analyser<a class="headerlink" href="#module-analyser" title="Permalink to this headline">¶</a></h1>
+<p>Posture-data-receiving-implementaiton-free implementation of its analysis.
+Analyser class is an convenient analysis function storage.
+Its main function - check mode - prints out the logs on the
+current posture position.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="analyser.Analyzer">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">analyser.</span></span><span class="sig-name descname"><span class="pre">Analyzer</span></span><a class="headerlink" href="#analyser.Analyzer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analyser class. Should be created once in order to keep track of the user
+posture description. Should be related to other classes as an agregator class</p>
+<p>Main function is check_mode, which is based on some amount of static methods,
+that could be also useful for testing the system</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="analyser.Analyzer.check_data">
+<span class="sig-name descname"><span class="pre">check_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#analyser.Analyzer.check_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function to check data from file</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analyser.Analyzer.check_mode">
+<span class="sig-name descname"><span class="pre">check_mode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">serial.serialwin32.Serial</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">None</span><a class="headerlink" href="#analyser.Analyzer.check_mode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Main funciton of class. Checks current posture represented in angles for
+each type of analyser-function and print out the trend on the screen.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analyser.Analyzer.forward_rotation">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">forward_rotation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">orient_1</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orient_2</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#analyser.Analyzer.forward_rotation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks whether the user bent down (so not to count it
+as a bad posture)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analyser.Analyzer.forward_tilt">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">forward_tilt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">orient_1</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orient_2</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#analyser.Analyzer.forward_tilt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks whehter the user over-bends to the side</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analyser.Analyzer.side_tilt">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">side_tilt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">orient_1</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orient_2</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#analyser.Analyzer.side_tilt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks whehter the user over-bends to the side</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="analyser.Analyzer.steady">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">steady</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">orient_1</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orient_2</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">bool</span><a class="headerlink" href="#analyser.Analyzer.steady" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines whether the posture of user is
+ok in the current moment of time</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-raw_data_timeline">
+<span id="raw-data-timeline"></span><h1>raw_data_timeline<a class="headerlink" href="#module-raw_data_timeline" title="Permalink to this headline">¶</a></h1>
+<p>Module that makes timeline graphs from csv data.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="raw_data_timeline.plot_timeline">
+<span class="sig-prename descclassname"><span class="pre">raw_data_timeline.</span></span><span class="sig-name descname"><span class="pre">plot_timeline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#raw_data_timeline.plot_timeline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Makes timeline graphs from csv data.</p>
+</dd></dl>
+
+</section>
+<section id="module-visualization">
+<span id="visualization"></span><h1>visualization<a class="headerlink" href="#module-visualization" title="Permalink to this headline">¶</a></h1>
+<p>Module that contains function to visualise the sensor with OpenGL and pygame.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="visualization.Quaternion_to_Euler">
+<span class="sig-prename descclassname"><span class="pre">visualization.</span></span><span class="sig-name descname"><span class="pre">Quaternion_to_Euler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Q</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#visualization.Quaternion_to_Euler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the Euler angles that are gotten from quaternion.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="visualization.draw">
+<span class="sig-prename descclassname"><span class="pre">visualization.</span></span><span class="sig-name descname"><span class="pre">draw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ay</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">az</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">screen</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">i</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str_condition</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#visualization.draw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw the object of visulization.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="visualization.drawtext">
+<span class="sig-prename descclassname"><span class="pre">visualization.</span></span><span class="sig-name descname"><span class="pre">drawtext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">position</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">textstring</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#visualization.drawtext" title="Permalink to this definition">¶</a></dt>
+<dd><p>Draw the text on the visualization.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="visualization.init">
+<span class="sig-prename descclassname"><span class="pre">visualization.</span></span><span class="sig-name descname"><span class="pre">init</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#visualization.init" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initialize the object to visualize.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="visualization.main">
+<span class="sig-prename descclassname"><span class="pre">visualization.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#visualization.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the visualization.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="visualization.read_data">
+<span class="sig-prename descclassname"><span class="pre">visualization.</span></span><span class="sig-name descname"><span class="pre">read_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#visualization.read_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read and normalize data for visualization.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="visualization.resize">
+<span class="sig-prename descclassname"><span class="pre">visualization.</span></span><span class="sig-name descname"><span class="pre">resize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">width</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#visualization.resize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resize the model of sensor.</p>
+</dd></dl>
+
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">strYa</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, students.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

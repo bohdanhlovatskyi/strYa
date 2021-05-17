@@ -1,17 +1,25 @@
+'''
+Module that makes timeline graphs from csv data.
+'''
 import matplotlib.pyplot as plt
 
 import numpy as np
 import pandas as pd
 
+
 def plot_timeline(file_name):
-    #data frame from rounded data file
+    '''
+    Makes timeline graphs from csv data.
+    '''
+    # data frame from rounded data file
     df = pd.read_csv(file_name)
 
-    #find all par for graphs
+    # find all par for graphs
     time = df['computer_time']
 
-    #plotting
-    fig, (x_acc_1,y_acc_1,x_gyro_1,y_gyro_1,x_acc_2,y_acc_2,x_gyro_2,y_gyro_2) = plt.subplots(8, 1)
+    # plotting
+    fig, (x_acc_1, y_acc_1, x_gyro_1, y_gyro_1, x_acc_2,
+          y_acc_2, x_gyro_2, y_gyro_2) = plt.subplots(8, 1)
 
     x_acc_1.plot(time, df['x_acc_1'].tolist())
     x_acc_1.set_title('x_acc_1')
@@ -40,6 +48,7 @@ def plot_timeline(file_name):
     fig.subplots_adjust(hspace=0.5)
 
     plt.show()
-    #plt.savefig(new)
+    # plt.savefig(new)
 
-plot_timeline('walking.csv')
+# if __name__ == "__main__":
+    # plot_timeline('walking.csv')

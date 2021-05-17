@@ -6,7 +6,7 @@ import unittest
 import sys
 # sys.path.append("..") # Adds higher directory to python modules path.
 
-from .. import adts
+import adts
 
 class TestBuffer(unittest.TestCase):
 

@@ -11,6 +11,7 @@ import serial
 from collections import defaultdict
 from typing import List
 
+
 class Analyzer:
     '''
     Analyser class. Should be created once in order to keep track of the user
@@ -26,7 +27,7 @@ class Analyzer:
         '''
 
         self.info_on_user: defaultdict = defaultdict(int)
-        
+
     def __read_data(self, path: str) -> List[List[float]]:
         '''
         Prepapares some lists of data from dataset. Is useful if
@@ -34,22 +35,22 @@ class Analyzer:
         wrapper function)
         '''
 
-        #data frame from rounded data file
+        # data frame from rounded data file
         df = pd.read_csv(path)
         rounded = np.round(df)
 
-        #find optimal and delete it from data frame
+        # find optimal and delete it from data frame
         optimal = df.tail(1)
         print(optimal)
         x1_optimal = optimal['x1'].tolist()[0]
         y1_optimal = optimal['y1'].tolist()[0]
         # # print(x_optimal, y_optimal)
-        #print(optimal)
+        # print(optimal)
         x2_optimal = optimal['x2'].tolist()[0]
         y2_optimal = optimal['y2'].tolist()[0]
         df = df.head(-1)
 
-        #find all par for graphs
+        # find all par for graphs
         time = df['computer_time'].tolist()
         start_time = time[0]
         time = [i-start_time for i in time]
@@ -102,13 +103,13 @@ class Analyzer:
         y2 = orient_2[1]
         if 10 < abs(y1) < 25 and abs(y2) < 7:
             return True
-        #check sitting
+        # check sitting
         if 10 < abs(y1) < 15 and 25 < abs(y2) < 30:
             return True
         return False
 
     @staticmethod
-    def side_tilt(orient_1: List[float], orient_2: List[float]) -> bool:      
+    def side_tilt(orient_1: List[float], orient_2: List[float]) -> bool:
         '''
         Checks whehter the user over-bends to the side
         '''
@@ -116,9 +117,8 @@ class Analyzer:
         x1 = orient_1[0]
         x2 = orient_2[0]
         if 10 < abs(x1) < 30 or 10 < abs(x2) < 30:
-                return True
+            return True
         return False
-    
 
     def check_mode(self, *args, port: serial.Serial = None) -> None:
         '''
@@ -128,7 +128,8 @@ class Analyzer:
 
         upper_sensor_group, lower_sensor_group = args
         self.info_on_user['num_of_iterations'] += 1
-        funcs = [self.steady, self.forward_rotation,  self.forward_tilt, self.side_tilt]
+        funcs = [self.steady, self.forward_rotation,
+                 self.forward_tilt, self.side_tilt]
 
         for idx, func in enumerate(funcs):
             if not func(upper_sensor_group, lower_sensor_group):
@@ -138,12 +139,13 @@ class Analyzer:
                 port.write(bytearray(b'1'))
 
             self.info_on_user[func.__name__] += 1
-            
-            print(f"{self.info_on_user['num_of_iterations']} iteration: {func.__name__}")
+
+            print(
+                f"{self.info_on_user['num_of_iterations']} iteration: {func.__name__}")
             return
 
-        print(f"{self.info_on_user['num_of_iterations']} iteration: the trend is not clear")
-
+        print(
+            f"{self.info_on_user['num_of_iterations']} iteration: the trend is not clear")
 
     def check_data(self, path):
         '''
