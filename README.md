@@ -10,6 +10,9 @@
  - [License and Copyright](license-and-copyright)
 
 ## Description
+**strYa** is a project aimed at helping one to track the quality of his posture. Using two Inertial Measurement Units (IMUs), the system can determine the quality of user's posture. After the system is setup, one may run an visualisation of one of the sensor, based on written dataset (one can pass to_file argument to main), as well as look at the statistics and graphs of the measurements from the files via simple web application written using python dash module
+
+<br>
 
 ## Getting started
 
@@ -28,12 +31,9 @@
   ```bash
   $ git clone https://github.com/bohdanhlovatskyi/strYa  
   ```
-  1. Connect the components in the following way: ![Alt text](wiki/schematic.png?raw=true "Title")
-  2. Connect the Arduino microcontroller to your computer via serail port.
-  3. Build and run the project.
-
-### Usage 
-
+  2. Connect the components in the following way: ![Alt text](wiki/schematic.png?raw=true "Title")
+  3. Connect the Arduino microcontroller to your computer via serail port.
+  4. Build and run the project.
 
 ## Team
 | **Bohdan Hlovatskyi** | **Karyna Volokhatiuk** | **Yuriy Sukhorskyy** |

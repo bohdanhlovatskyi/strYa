@@ -177,7 +177,7 @@ def main(path=None):
             #print(x, y, z)
             x, y = x1[i], y1[i]
             draw(x, y, 0, screen, i)
-            analyser.check_mode((x, y), (x2[i], y2[i]))
+            str_condition = analyser.check_mode((x, y), (x2[i], y2[i]))
             time.sleep(0.1)
     # else:
     #     while True:

@@ -135,7 +135,7 @@ class Analyzer:
 
             self.info_on_user[func.__name__] += 1
             print(f"On {self.info_on_user['num_of_iterations']} iteration, the trend in position is {func.__name__}")
-            return
+            return f"On {self.info_on_user['num_of_iterations']} iteration, the trend in position is {func.__name__}"
         # print(f"On {self.info_on_user['num_of_iterations']} iteration, the posture seems OK")
 
 
