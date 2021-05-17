@@ -179,11 +179,9 @@ def main(path=None):
             str_condition = analyser.check_mode((x, y), (x2[i], y2[i]))
             draw(x, y, 0, screen, i, str_condition)
             time.sleep(0.1)
-    # else:
-    #     while True:
-            
-# 'datasets\\forward_movements\\angles_forward_rotation_with_tilt.csv'
-# 'datasets\steady\\angles_steady.csv'
+    
+    print(f'Thanks for usage, overall result is {analyser.info_on_user}')
+
 if __name__ == '__main__':
-    path = 'GODSPRESENTTOPEOPLE.csv'
+    path = 'datasets/angles/angles_forward_rotations.csv'
     main(path)
